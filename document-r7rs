@@ -1,0 +1,25 @@
+#! gosh -I.
+;; Update the shebang line for your implementation.
+;; -*- mode: Scheme;-*-
+
+;; CLI for documentation extraction and export.
+;; SPDX-License-Identifier: MIT
+;; SPDX-FileCopyrightText: 2024 Antero Mejr <mail@antr.me>
+
+(import (scheme base)
+        (scheme process-context)
+        (scheme write)
+        (srfi 37)
+        (doc-lib))
+
+;; If we have SRFIs 106 and 180, enable the LSP server extension.
+(define lsp? #t)
+(cond-expand ((and (library (srfi 106)) (library (srfi 180)))
+              (import (srfi 106) (srfi 180)))
+             (else (define lsp? #f)))
+
+(define (main args)
+  (display lsp?)
+  (newline))
+
+(main (cdr (command-line)))

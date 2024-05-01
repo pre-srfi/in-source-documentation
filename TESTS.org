@@ -1,0 +1,10 @@
+#+TITLE: Running the tests
+
+# SPDX-FileCopyrightText: 2024 Antero Mejr
+# SPDX-License-Identifier: MIT
+
+To run the test suite using Gauche:
+
+#+begin_src shell
+gosh -I . doc-lib-tests.scm
+#+end_src
