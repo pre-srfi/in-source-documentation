@@ -1,5 +1,5 @@
 #! gosh -I.
-;; Update the shebang line for your implementation.
+;; TODO: Update the shebang line for your implementation.
 ;; -*- mode: Scheme;-*-
 
 ;; CLI for documentation extraction and export.
