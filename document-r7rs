@@ -1,25 +1,190 @@
 #! gosh -I.
-;; TODO: Update the shebang line for your implementation.
 ;; -*- mode: Scheme;-*-
+;; TODO: Update the shebang line for your implementation.
 
 ;; CLI for documentation extraction and export.
 ;; SPDX-License-Identifier: MIT
 ;; SPDX-FileCopyrightText: 2024 Antero Mejr <mail@antr.me>
 
 (import (scheme base)
+        (scheme eval)
+        (scheme file)
         (scheme process-context)
+        (scheme read)
         (scheme write)
+        (srfi 1)
+        (srfi 28)
         (srfi 37)
         (doc-lib))
 
 ;; If we have SRFIs 106 and 180, enable the LSP server extension.
 (define lsp? #t)
 (cond-expand ((and (library (srfi 106)) (library (srfi 180)))
-              (import (srfi 106) (srfi 180)))
+              (import (srfi 106) (srfi 180) (lsp server)))
              (else (define lsp? #f)))
 
+;; Read/export logic.
+
+(define (clean-whitespace str)
+  0)
+
+#| Convert a file into a list of doc records. |#
+(define (extractor infile)
+  0)
+
+#| Convert a list of doc records into a list of semi-formatted strings. |#
+(define (text-converter docs)
+  0)
+
+#| Convert a list of texts into a single string. |#
+(define (text-exporter infile texts config)
+  0)
+
+#| Write a string of documentation into a file. |#
+(define (writer str outfile)
+  0)
+
+(define (eval-file file env)
+  (define (eval-port port last)
+    (let ((obj (eval (read port) env)))
+      (if (eof-object? obj)
+          last
+          (eval-port port obj))))
+  (call-with-input-file file
+    (lambda (port) (eval-port port #f))))
+
+(define (export-doc path doc-format export-format outdir config-file)
+  (let* ((config-alist (if config-file
+                           (eval-file config-file (environment '(scheme base)))
+                           '()))
+         (docs (extractor path))
+         (texts (text-converter docs))
+         (out-str (text-exporter path texts config-alist)))
+    (writer out-str (string-append outdir "/" path ".txt"))))
+
+;; LSP code.
+
+(define (validate-lsp-port port)
+  (let ((n (string->number port)))
+    (unless (and (exact-integer? n) (> 0 n) (<= n 65535))
+      (error "PORT must be an integer between 1 and 65535."))
+    n))
+
+;; CLI code.
+
+(define doc-formats '("text"))
+(define export-formats '("text"))
+
+(define (validate-doc-format doc-format)
+  (unless (member doc-format doc-formats)
+    (error (format "Unrecognized format for -e option: ~a" doc-format)))
+  doc-format)
+
+(define (validate-export-format export-format)
+  (unless (member export-format export-formats)
+    (error (format "Unrecognized format for -e option: ~a" export-format)))
+  export-format)
+
+(define (display-help . rest)
+  (display (string-append "Usage: document-r7rs [options...] pathname...
+Options:
+  -V           Display version information and exit.
+  -h, --help   Display usage information and exit.
+  -A DIR       Append DIR to the directory search path.
+  -I DIR       Prepend DIR to the directory search path.
+  -o DIR       Write output files to DIR.
+  -e FORMAT    Export in-source documentation to FORMAT.
+               Supported formats: text
+  -f FORMAT    Parse in-source documentation as FORMAT.
+               Supported formats: text
+  -c FILE      Load configuration settings from FILE.\n"
+                          (if lsp? "  \
+  -p PORT      Run LSP server on port PORT.
+  -i           Run LSP server on stdout.\n" ""))))
+
+(define defaults-alist '((output-directory . "doc")
+                         (export-format . "text")
+                         (doc-format . "text")
+                         (config-file . #f)
+                         (port . #f) ; LSP does not specify a default port?
+                         (stdout? . #f)))
+
+(define spec-options (list (option '(#\A) #t #f
+                                   (lambda (opt name arg result)
+                                     (alist-cons 'append-path arg result)))
+                           (option '(#\I) #t #f
+                                   (lambda (opt name arg result)
+                                     (alist-cons 'prepend-path arg result)))
+                           (option '(#\o) #t #f
+                                   (lambda (opt name arg result)
+                                     (alist-cons 'output-directory arg result)))
+                           (option '(#\e) #t #f
+                                   (lambda (opt name arg result)
+                                     (alist-cons 'export-format
+                                                 (validate-export-format arg)
+                                                 result)))
+                           (option '(#\f) #t #f
+                                   (lambda (opt name arg result)
+                                     (alist-cons 'doc-format
+                                                 (validate-doc-format arg)
+                                                 result)))
+                           (option '(#\c) #t #f
+                                   (lambda (opt name arg result)
+                                     (alist-cons 'config-file arg result)))
+                           (option '(#\V) #f #f
+                                   (lambda _
+                                     (display "(command \"document-r7rs\")
+(version \"1.0.0\")\n")
+                                     (exit 0)))))
+
+(define extra-options (list (option '(#\h "help") #f #f
+                                    (lambda _
+                                      (display-help)
+                                      (exit 0)))))
+
+(define lsp-options (list (option '(#\p) #t #f
+                                  (lambda (opt name arg result)
+                                    (alist-cons 'stdout? #f result)
+                                    (alist-cons 'port (validate-lsp-port arg)
+                                                result)))
+                          (option '(#\i) #f #f
+                                  (lambda (opt name arg result)
+                                    (alist-cons 'stdout? #t result)))))
+
+(define options (if lsp?
+                    (append lsp-options extra-options spec-options)
+                    (append extra-options spec-options)))
+
+;; Entry point.
+
+(define (assoc-ref key alist)
+  (let ((pair (assoc key alist)))
+    (and pair (cdr pair))))
+
 (define (main args)
-  (display lsp?)
-  (newline))
+  (let-values (((opts paths)
+                (partition pair? (args-fold args options (lambda _
+                                                           (display-help)
+                                                           (exit 1))
+                                            cons defaults-alist))))
+    (cond ((assoc-ref 'stdout? opts)
+           (start-lsp-server #f))
+          ((assoc-ref 'port opts) => start-lsp-server)
+          (else
+           (for-each (lambda (path)
+                       (export-doc path
+                                   (assoc-ref 'doc-format opts)
+                                   (assoc-ref 'export-format opts)
+                                   (assoc-ref 'output-directory opts)
+                                   (assoc-ref 'config-file opts)))
+                     (append (filter (lambda (pair)
+                                       (and (eq? (car pair) 'prepend-path)
+                                            (cdr pair)))
+                                     opts)
+                             paths
+                             (filter (lambda (pair)
+                                       (and (eq? (car pair) 'append-path)
+                                            (cdr pair)))
+                                     opts)))))))
 
 (main (cdr (command-line)))
