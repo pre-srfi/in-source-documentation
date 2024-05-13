@@ -3,6 +3,15 @@
 # SPDX-License-Identifier: MIT
 * SRFI 2XX: In-source documentation
 
+** TODO list
+
+- Write SRFI 38 reader with support for extended syntax.
+- Write the read-doc procedure (use SRFI 38 reader also?)
+- Tie in to the package management SRFI to store documentation build
+  configuration
+- Specify scope attribute of attached documentation? (differentiating between
+  documentation of a library vs. sublibraries vs. library contents)
+
 ** by Antero Mejr
 
 
