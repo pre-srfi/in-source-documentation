@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<!--
+SPDX-FileCopyrightText: 2024 Antero Mejr
+SPDX-License-Identifier: MIT
+-->
+    <meta charset="utf-8">
+    <title>SRFI 253: In-source documentation</title>
+    <link href="/favicon.png" rel="icon" sizes="192x192" type="image/png">
+    <link rel="stylesheet" href="https://srfi.schemers.org/srfi.css" type="text/css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+     small { font-size: 14px; vertical-align: 2px; }
+     body  { line-height: 24px; }
+     pre  { font-family: inherit; line-height: 20px; }
+    </style>
+  </head>
+  <body>
+    <h1><a href="https://srfi.schemers.org/"><img class="srfi-logo" src="https://srfi.schemers.org/srfi-logo.svg" alt="SRFI surfboard logo" /></a>253: In-source documentation</h1>
+
+<p>by Antero Mejr</p>
+
+<h2 id="status">Status</h2>
+
+    <p>
+      This SRFI is currently in <em>draft</em> status.
+      Here is <a href="https://srfi.schemers.org/srfi-process.html">an explanation</a> of each status that a SRFI can hold.
+      To provide input on this SRFI, please send email to <code><a href="mailto:srfi+minus+253+at+srfi+dotschemers+dot+org">srfi-253@<span class="antispam">nospam</span>srfi.schemers.org</a></code>.
+      To subscribe to the list, follow <a href="https://srfi.schemers.org/srfi-list-subscribe.html">these instructions</a>.
+      You can access previous messages via the mailing list <a href="https://srfi-email.schemers.org/srfi-253/">archive</a>.
+    </p>
+
+    <ul>
+      <li>Received: 2024-01-13</li>
+
+      
+    </ul>
+
+<h2 id="abstract">Abstract</h2>
+
+
+  <p>This specifies reader syntax extensions for in-source documentation.
+The syntax <code></code>#? ... ?#<code></code> adds documentation text to the
+subsequent expression. The syntax <code>#* ... *#</code> adds
+documentation text that is not attached to any particular expression. A
+Scheme library for reading in-source documentation is also
+specified.</p>
+
+
+  <h2 id="rationale">Rationale</h2>
+
+  <p>In-source documentation systems allow for documentation to be written
+alongside the code, in the source code file itself. Then, an exporter
+program can parse the source code file, extract the documentation, and
+use it to generate typeset documentation in a format such as LaTeX or
+HTML.</p>
+
+  <p>One of the advantages of in-source documentation is that when reading
+code, there is no need to simulatenously navigate and switch between a
+separate external information source, like an Info page or website. And
+oftentimes, reading an object's in-source documentation will make
+reading its code unnecessary.</p>
+
+  <p>Keeping documentation up-to-date is another task made easier by
+in-source documentation. It is quicker to update documentation that is
+located next to the modified source code, than having to find and update
+the correct location in an external documentation file.</p>
+
+  <p>New technologies like the <a href="https://microsoft.github.io/language-server-protocol">Language
+Server Protocol</a> (LSP) allow in-source documentation to be
+automatically retrieved and displayed by text editors and Integrated
+Development Environments (IDE). LSP clients are included in an
+increasing number of editors (including Emacs), but LSP servers are only
+presently available for a small number of Scheme implementations.</p>
+
+  <p>Introducing a flexible in-source documentation system as an SRFI will
+standardize a stable interface that can be used in multiple
+implementations, to generate typeset documentation and to provide a base
+for new editor tools and integrations.</p>
+
+  <p>This SRFI intentionally does not specify a command-line interface
+(CLI) for a extracting and exporting in-source documentation. Such a
+program would be better specified as part of a different SRFI for
+package management operations.</p>
+
+  <p>In-source documentation is not to be confused with literate
+programming (LP). For in-source documentation systems, documentation is
+extracted from the source code. For LP systems, source code is extracted
+(or "tangled", in LP terminology) from the documentation.</p>
+
+  <h3 id="existing-solutions">Existing solutions</h3>
+
+  <p>Chicken Scheme's <a href="https://wiki.call-cc.org/eggref/4/hahn">Hahn</a> library provided
+an in-source documentation system for Chicken 4, but it has not been
+updated to Chicken 5. It uses a custom S-expression-based markup format,
+and documentation is placed between the identifier name and body of
+<code>define</code> forms. It can export to LaTeX and Wiki.</p>
+
+  <p><a href="https://clojure.org/">Clojure</a> places docstrings between
+the procedure name and its argument list. Documentation is accessed in
+the REPL, using the <code>(doc proc-name)</code> procedure.
+Documentation export is provided by a number of external projects. Most
+parse docstrings as markdown text with WikiLink links, and export to
+HTML.</p>
+
+  <p>The <a href="https://homes.cs.aau.dk/~normark/schemedoc/">SchemeDoc</a> library
+provided an in-source documentation library for R4RS/R5RS, as part of
+the larger LAML library. It used a custom markup system placed inside
+regular Scheme comments, and assigned meaning to the number of
+semicolons the comments started with. It exported to HTML.</p>
+
+  <p>Racket's <a href="https://docs.racket-lang.org/scribble/srcdoc.html">srcdoc</a>
+module provides special forms to document procedures, variables, and
+data structures. In-source documentation uses the Scribble markup
+format, and can be exported to HTML or LaTeX.</p>
+
+  <h2 id="specification">Specification</h2>
+
+  <h3 id="syntax">Syntax</h3>
+
+  <p>This SRFI extends the specifications of comments in <a href="https://small.r7rs.org/attachment/r7rs.pdf#section.2.2">R7RS
+section 2.2</a>> as follows:</p>
+
+  <p>The sequences <code>#?</code> and <code>#*</code> indicate the start
+of a documentation comment. The documentation comment continues, and may
+span multiple lines, until a matching <code>?#</code> or <code>*#</code>
+appears, respectively. If the matching closing character sequence is
+omitted, an error is signaled. Documentation comments are visible to
+Scheme as a single whitespace. Documentation comments may not be nested:
+a <code>#*</code> or <code>#?</code> sequence inside of a documentation
+comment is ignored.</p>
+
+  <p>This SRFI also adds four productions in the specification of lexical
+structure, <a href="https://small.r7rs.org/attachment/r7rs.pdf#subsection.7.1.1">R7RS
+section 7.1.1</a>, as follows:</p>
+
+  <pre><code>&lt;attached documentation comment> -->
+  #? &lt;attached documentation comment text>* ?#
+
+&lt;attached documentation comment text> -->
+  &lt;character sequence not containing #?>
+
+&lt;unattached documentation comment> -->
+  #* &lt;unattached documentation comment text>* *#
+
+&lt;unattached documentation comment text> -->
+  &lt;character sequence not containing #*></code></pre>
+
+  <h3 id="documentation-library">Documentation library</h3>
+
+  <pre><code>(read-doc [port])</code></pre>
+
+  <p>The <code>read-doc</code> procedure converts in-source documentation
+text and external representations of Scheme objects into
+<code>doc</code> records. It returns the next <code>doc</code> record
+parsable from the given textual input port, updating <code>port</code>
+to point to the first character past the end of the external
+representation of the unattached in-source documentation text or
+attached Scheme object.</p>
+
+  <p>When parsing in-source documentation text, this procedure must
+recognize the escape sequences <code>\#</code> and <code>\\</code>, and
+convert them to <code>#</code> and <code>\</code>, respectively. No
+other escape sequences may be supported. This procedure shall not strip
+whitespace present in the documentation text.</p>
+
+  <p>It is an error if the attached <code>#? ... ?#</code> syntax is read,
+but there are no more Scheme objects to read before the port is
+exhausted.</p>
+
+  <p>If the <code>port</code> argument is not supplied,
+<code>(current-input-port)</code> shall be used.</p>
+
+  <pre><code>(define documented-expr "#? The number 3. ?# 3")
+(define unattached-doc "#* Hello world. */# *#")
+(define no-doc "(+ 3 2)")
+(define invalid-doc "#? An expression is missing after this. ?#")
+
+(read-doc (open-input-string documented-expr))
+;; => (doc #t " The number 3. " 3)
+(read-doc (open-input-string unattached-doc))
+;; => (doc #f " Hello world. *# " #f)
+(read-doc (open-input-string no-doc))
+;; => (eof-object)
+(read-doc (open-input-string invalid-doc))
+;; => error</code></pre>
+<br>
+
+
+  <p>The following procedures may be automatically implemented using
+<code>define-record-type</code>:</p>
+
+  <pre><code>(make-doc attached? content expression alist)</code></pre>
+
+  <p>Create a <code>doc</code> record. The <code>attached?</code> argument
+is a boolean indicating whether or not the documentation is attached to
+an expression. The <code>content</code> argument is the string
+containing the in-source documentation text, or <code>#f</code> if there
+is no documentation available. The <code>expression</code> argument is
+the expression the in-source documentation is attached to, or
+<code>#f</code> if the in-source documentation is unattached. The
+<code>alist</code> argument is an association list containing
+implementation-defined information relating to the expression, such as
+its location in the source file.</p>
+
+  <pre><code>(make-doc #t " Three plus two. " '(+ 3 2)
+          '((source-location . (22 42))))
+;; => object of type 'doc'</code></pre>
+<br>
+
+
+  <pre><code>(doc-attached? doc-object)</code></pre>
+
+  <p>Returns the <code>attached?</code> field of a <code>doc</code>
+record, a boolean.</p>
+
+  <pre><code>(doc-attached? (make-doc #t " Three plus two. " '(+ 3 2) '()))
+;; => #t</code></pre>
+<br>
+
+
+  <pre><code>(doc-content doc-object)</code></pre>
+
+  <p>Returns the <code>content</code> field of a <code>doc</code> record,
+a string.</p>
+
+  <pre><code>(doc-content (make-doc #t " Three plus two. " '(+ 3 2) '()))
+;; => " Three plus two. "</code></pre>
+<br>
+
+
+  <pre><code>(doc-expression doc-object)</code></pre>
+
+  <p>Returns the <code>expression</code> field of a <code>doc</code>
+record. The return value may be of any readable type.</p>
+
+  <pre><code>(doc-expression (make-doc #t " Three plus two. " '(+ 3 2) '()))
+;; => '(+ 3 2)</code></pre>
+<br>
+
+
+  <pre><code>(doc-alist doc-object)</code></pre>
+
+  <p>Returns the <code>alist</code> field of a <code>doc</code> record, an
+association list.</p>
+
+  <pre><code>(doc-alist (make-doc #t " Three plus two. " '(+ 3 2)
+                     '((source-location . (22 42)))))
+;; => '((source-location . (22 42)))</code></pre>
+<br>
+
+
+  <pre><code>(doc? object)</code></pre>
+
+  <p>Type predicate that returns <code>#t</code> if the supplied
+<code>object</code> argument is a <code>doc</code> record. Otherwise,
+returns <code>#f</code>.</p>
+
+  <pre><code>(doc? (make-doc #t " Three plus two. " '(+ 3 2) '()))
+;; => #t
+(doc? "hello world")
+;; => #f</code></pre>
+
+  <h2 id="implementation">Implementation</h2>
+
+  <p>A conformant sample implementations of the documentation library is
+provided. It requires R7RS-small.</p>
+
+  <p>Reader support for the syntax extensions is implementation-specific,
+and is not provided.</p>
+
+  <p>The sample implementation is available <a href="https://github.com/scheme-requests-for-implementation/srfi-2xx">in
+the repo</a> or <a href="https://srfi.schemers.org/srfi-2xx/doc-lib.sld">directly</a>.</p>
+
+  <p>A test suite for the documentation library is available <a href="https://github.com/scheme-requests-for-implementation/srfi-2xx/blob/master/doc-lib-tests.scm">in
+the repo</a> or <a href="https://srfi.schemers.org/srfi-2xx/doc-lib-tests.scm">directly</a>.</p>
+
+  <h2 id="acknowledgements">Acknowledgements</h2>
+
+  <p>Thank you to the members of the SRFI mailing list for their input
+during the drafting process.</p>
+
+
+<h2 id="copyright">Copyright</h2>
+<p>&copy; 2024 Antero Mejr</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+</p>
+<p>
+The above copyright notice and this permission notice (including the
+next paragraph) shall be included in all copies or substantial
+portions of the Software.
+
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+</p>
+
+  <hr>
+  <address>Editor: <a href="mailto:srfi-editors+at+srfi+dot+schemers+dot+org">Arthur A. Gleckler</a></address>
+  </body>
+</html>

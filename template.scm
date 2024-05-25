@@ -1,0 +1,8 @@
+((number 253)
+ (status draft)
+ (title "In-source documentation")
+ (author "Antero Mejr")
+ (see-also 30)
+ (keywords reader-syntax)
+ (draft-date "2024-01-13")
+ (done-date "2024-04-25"))
