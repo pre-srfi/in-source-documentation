@@ -81,8 +81,8 @@ implementations, both to generate typeset documentation and to provide a
 base for new editor tools and integrations.</p>
 
   <p>This SRFI intentionally does not specify a command-line interface for
-a program to export in-source documentation. Such an interface would be
-better specified in a SRFI for package management. It also does not
+a program that exports in-source documentation. Such an interface would
+be better specified in a SRFI for package management. It also does not
 specify a format for the extracted in-source documentation text, as
 exporters may choose to support any number of different markup
 formats.</p>
@@ -201,8 +201,9 @@ appears after the dot in a dotted list.</p>
 (read-doc (open-input-string nested))
 ;; => (doc #t " Outer "
            `(+ 1 ,(doc #t " Inner "
-                       `(+ 2 ,(doc #f " Innermost " #f '()) 3) '()))
-                   '())</code></pre>
+                       `(+ 2 ,(doc #f " Innermost " #f '()) 3)
+                       '()))
+           '())</code></pre>
 
   <p><br></p>
 

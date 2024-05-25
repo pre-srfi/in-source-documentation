@@ -37,10 +37,10 @@ both to generate typeset documentation and to provide a base for new editor
 tools and integrations.
 
 This SRFI intentionally does not specify a command-line interface for a program
-to export in-source documentation. Such an interface would be better specified
-in a SRFI for package management. It also does not specify a format for the
-extracted in-source documentation text, as exporters may choose to support
-any number of different markup formats.
+that exports in-source documentation. Such an interface would be better
+specified in a SRFI for package management. It also does not specify a format
+for the extracted in-source documentation text, as exporters may choose to
+support any number of different markup formats.
 
 In-source documentation is not to be confused with literate programming (LP).
 For in-source documentation systems, documentation is extracted from the source
@@ -153,8 +153,9 @@ If the `port` argument is not supplied, `(current-input-port)` shall be used.
 (read-doc (open-input-string nested))
 ;; => (doc #t " Outer "
            `(+ 1 ,(doc #t " Inner "
-                       `(+ 2 ,(doc #f " Innermost " #f '()) 3) '()))
-                   '())
+                       `(+ 2 ,(doc #f " Innermost " #f '()) 3)
+                       '()))
+           '())
 ```
 <br/>
 
