@@ -28,19 +28,19 @@ New technologies like the [Language Server
 Protocol](https://microsoft.github.io/language-server-protocol) (LSP) allow
 in-source documentation to be automatically retrieved and displayed by text
 editors and Integrated Development Environments (IDE). LSP clients are included
-in an increasing number of editors (including Emacs), but LSP servers are only
-presently available for a small number of Scheme implementations.
+in an increasing number of editors (including Emacs), but LSP servers are
+presently available for only a small number of Scheme implementations.
 
 Introducing a flexible in-source documentation system as an SRFI will
-standardize a stable interface that can be used in multiple implementations, to
-generate typeset documentation and to provide a base for new editor tools and
-integrations.
+standardize a stable interface that can be used in multiple implementations,
+both to generate typeset documentation and to provide a base for new editor
+tools and integrations.
 
-This SRFI intentionally does not specify a command-line interfacefor a program
-that exports in-source documentation. Such an interface would be better
-specified in a SRFI for package management operations. It also does not specify
-a format for the in-source documentation text, as exporters may choose to
-support different markup formats.
+This SRFI intentionally does not specify a command-line interface for a program
+to export in-source documentation. Such an interface would be better specified
+in a SRFI for package management. It also does not specify a format for the
+extracted in-source documentation text, as exporters may choose to support
+any number of different markup formats.
 
 In-source documentation is not to be confused with literate programming (LP).
 For in-source documentation systems, documentation is extracted from the source
@@ -64,7 +64,7 @@ and export to HTML.
 The [SchemeDoc](https://homes.cs.aau.dk/~normark/schemedoc/) library provided an
 in-source documentation library for R4RS/R5RS, as part of the larger LAML
 library. It used a custom markup system placed inside regular Scheme comments,
-and assigned meaning to the number of semicolons preceeding the comment text. It
+and assigned meaning to the number of semicolons preceding the comment text. It
 exported to HTML.
 
 Racket's [srcdoc](https://docs.racket-lang.org/scribble/srcdoc.html) module
@@ -111,19 +111,21 @@ This SRFI also adds four productions in the specification of lexical structure,
 (read-doc [port])
 ```
 The `read-doc` procedure converts in-source documentation text and
-external representations of Scheme objects into `doc` records. It
-returns the next `doc` record parsable from the given textual input
+external representations of Scheme objects into `doc` records or objects. It
+returns the next `doc` record or object parsable from the given textual input
 port, updating `port` to point to the first character past the end of
-the external representation of the unattached in-source documentation text or
-attached Scheme object.
+the unattached in-source documentation text, the documentation-attached Scheme
+object, or non-documented external representation of the object.
 
 When parsing in-source documentation text, this procedure must recognize the
 escape sequences `\#` and `\\`, and convert them to `#` and `\`, respectively.
-No other escape sequences may be supported. This procedure shall not strip
+No other escape sequences should be supported. This procedure shall not strip
 whitespace present in the documentation text.
 
-It is an error if the attached `#? ... ?#` syntax is read, but there
-are no more Scheme objects to read before the port is exhausted.
+It is an error if the attached `#? ... ?#` syntax is read, but there are no more
+objects to read before the port is exhausted, or the next object read is also a
+documentation comment. It is an error if an unattached documentation comment
+appears after the dot in a dotted list.
 
 If the `port` argument is not supplied, `(current-input-port)` shall be used.
 
@@ -138,9 +140,9 @@ If the `port` argument is not supplied, `(current-input-port)` shall be used.
 
 (define no-doc "(+ 3 2)")
 (read-doc (open-input-string no-doc))
-;; => (eof-object)
+;; => '(+ 3 2)
 
-(define invalid "#? An expression is missing after this. ?#")
+(define invalid "(+ 1 2 #? An expression is missing after this. ?# )")
 (read-doc (open-input-string invalid))
 ;; => error
 
@@ -148,8 +150,8 @@ If the `port` argument is not supplied, `(current-input-port)` shall be used.
 (read-doc (open-input-string nested))
 ;; => (doc #t " Outer "
            `(+ 1 ,(doc #t " Inner "
-                       `(+ 2 ,(doc #f " Innermost " #f '()) 3))
-                   ()))
+                       `(+ 2 ,(doc #f " Innermost " #f '()) 3) '()))
+                   '())
 ```
 <br/>
 
