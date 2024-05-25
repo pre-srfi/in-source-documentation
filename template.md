@@ -36,9 +36,11 @@ standardize a stable interface that can be used in multiple implementations, to
 generate typeset documentation and to provide a base for new editor tools and
 integrations.
 
-This SRFI intentionally does not specify a command-line interface (CLI) for a
-extracting and exporting in-source documentation. Such a program would be better
-specified as part of a different SRFI for package management operations.
+This SRFI intentionally does not specify a command-line interfacefor a program
+that exports in-source documentation. Such an interface would be better
+specified in a SRFI for package management operations. It also does not specify
+a format for the in-source documentation text, as exporters may choose to
+support different markup formats.
 
 In-source documentation is not to be confused with literate programming (LP).
 For in-source documentation systems, documentation is extracted from the source
@@ -62,7 +64,7 @@ and export to HTML.
 The [SchemeDoc](https://homes.cs.aau.dk/~normark/schemedoc/) library provided an
 in-source documentation library for R4RS/R5RS, as part of the larger LAML
 library. It used a custom markup system placed inside regular Scheme comments,
-and assigned meaning to the number of semicolons the comments started with. It
+and assigned meaning to the number of semicolons preceeding the comment text. It
 exported to HTML.
 
 Racket's [srcdoc](https://docs.racket-lang.org/scribble/srcdoc.html) module
@@ -94,13 +96,13 @@ This SRFI also adds four productions in the specification of lexical structure,
   #? <attached documentation comment text>* ?#
 
 <attached documentation comment text> -->
-  <character sequence not containing #?>
+  <character sequence not containing ?#>
 
 <unattached documentation comment> -->
   #* <unattached documentation comment text>* *#
 
 <unattached documentation comment text> -->
-  <character sequence not containing #*>
+  <character sequence not containing *#>
 ```
 
 ### Documentation library
@@ -126,19 +128,28 @@ are no more Scheme objects to read before the port is exhausted.
 If the `port` argument is not supplied, `(current-input-port)` shall be used.
 
 ```
-(define documented-expr "#? The number 3. ?# 3")
-(define unattached-doc "#* Hello world. */# *#")
-(define no-doc "(+ 3 2)")
-(define invalid-doc "#? An expression is missing after this. ?#")
+(define attached "#? The number 3. ?#3")
+(read-doc (open-input-string attached))
+;; => (doc #t " The number 3. " 3 '())
 
-(read-doc (open-input-string documented-expr))
-;; => (doc #t " The number 3. " 3)
-(read-doc (open-input-string unattached-doc))
-;; => (doc #f " Hello world. *# " #f)
+(define unattached "#* Hello world. */# *#")
+(read-doc (open-input-string unattached))
+;; => (doc #f " Hello world. *# " #f '())
+
+(define no-doc "(+ 3 2)")
 (read-doc (open-input-string no-doc))
 ;; => (eof-object)
-(read-doc (open-input-string invalid-doc))
+
+(define invalid "#? An expression is missing after this. ?#")
+(read-doc (open-input-string invalid))
 ;; => error
+
+(define nested "#? Outer #? (+ 1 #? Inner ?# (+ 2 #* Innermost *# 3))")
+(read-doc (open-input-string nested))
+;; => (doc #t " Outer "
+           `(+ 1 ,(doc #t " Inner "
+                       `(+ 2 ,(doc #f " Innermost " #f '()) 3))
+                   ()))
 ```
 <br/>
 
@@ -146,20 +157,20 @@ The following procedures may be automatically implemented using
 `define-record-type`:
 
 ```
-(make-doc attached? content expression alist)
+(make-doc attached? text content alist)
 ```
 
 Create a `doc` record. The `attached?` argument is a boolean indicating whether
 or not the documentation is attached to an expression. The `content` argument is
 the string containing the in-source documentation text, or `#f` if there is no
-documentation available. The `expression` argument is the expression the
-in-source documentation is attached to, or `#f` if the in-source documentation
-is unattached. The `alist` argument is an association list containing
-implementation-defined information relating to the expression, such as its
+documentation available. The `content` argument is the expression the in-source
+documentation is attached to, or `#f` if the in-source documentation is
+unattached. The `alist` argument is an association list containing
+implementation-defined information relating to the documentation, such as its
 location in the source file.
 
 ```
-(make-doc #t " Three plus two. " '(+ 3 2)
+(make-doc #t "Three plus two." '(+ 3 2)
           '((source-location . (22 42))))
 ;; => object of type 'doc'
 ```
@@ -178,26 +189,27 @@ Returns the `attached?` field of a `doc` record, a boolean.
 <br/>
 
 ```
-(doc-content doc-object)
+(doc-text doc-object)
 ```
 
-Returns the `content` field of a `doc` record, a string.
+Returns the `text` field of a `doc` record, a string.
 
 ```
-(doc-content (make-doc #t " Three plus two. " '(+ 3 2) '()))
-;; => " Three plus two. "
+(doc-text (make-doc #t "Three plus two." '(+ 3 2) '()))
+;; => "Three plus two."
 ```
 <br/>
 
 ```
-(doc-expression doc-object)
+(doc-content doc-object)
 ```
 
-Returns the `expression` field of a `doc` record. The
-return value may be of any readable type.
+Returns the `content` field of a `doc` record. The return value may be of any
+readable type. If the return value is a list, it may contain nested `doc`
+records.
 
 ```
-(doc-expression (make-doc #t " Three plus two. " '(+ 3 2) '()))
+(doc-content (make-doc #t " Three plus two. " '(+ 3 2) '()))
 ;; => '(+ 3 2)
 ```
 <br/>

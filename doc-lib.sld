@@ -22,26 +22,13 @@
 ;; CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ;; SOFTWARE.
 
-#| #? This module implements the library component of SRFI 2xx.
-
-Implementations should rename this library to (srfi 2XX).
-?# |#
 (define-library (doc-lib)
   (import (scheme base)
           (scheme case-lambda))
-  (export make-doc doc? doc-attached? doc-content doc-expression doc-alist
+  (export make-doc doc? doc-attached? doc-text doc-content doc-alist
           read-doc)
   (begin
 
-    #| #? The doc record type stores documentation and any attached code.
-
-    Fields:
-      attached?: Whether the documentation is attached to an
-                 expression or not.
-      content: The text content of the documentation as a string.
-      expression: If attached, the expression the documentation is attached to.
-                  Set to #f if unattached.
-    ?# |#
     (define-record-type <doc>
       (doc attached content expression)
       doc?
@@ -49,20 +36,11 @@ Implementations should rename this library to (srfi 2XX).
       (content doc-content) ;string
       (expression doc-expression))
 
-    #| #? The read-doc procedure reads a port into 'doc' records.
-
-    Arguments:
-      port (optional): A textual input port. Default is (current-input-port).
-    ?# |#
-    (define read-doc
+    (define (read-doc port)
       (case-lambda
-       (() (_read-doc (current-input-port)))
-       ((port) (_read-doc port))))
+       (() (read-doc-internal (current-input-port)))
+       ((port) (read-doc-internal port))))
 
-    (define (_get-doc symbol import-set)
-      1)
-
-    (define (_read-doc port)
-      1)
-
+    (define (read-doc-internal port)
+      (make-doc #f "" '() '()))
 ))
