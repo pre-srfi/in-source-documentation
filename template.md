@@ -123,9 +123,12 @@ No other escape sequences should be supported. This procedure shall not strip
 whitespace present in the documentation text.
 
 It is an error if the attached `#? ... ?#` syntax is read, but there are no more
-objects to read before the port is exhausted, or the next object read is also a
-documentation comment. It is an error if an unattached documentation comment
-appears after the dot in a dotted list.
+objects to read before the expression ends or the port is exhausted. It is an
+error if the attached `#? ... ?#` syntax is read, but next read object is a
+documentation comment of any kind.
+
+It is an error if the unattached `#* ... *#` syntax appears after the dot in a
+dotted list.
 
 If the `port` argument is not supplied, `(current-input-port)` shall be used.
 

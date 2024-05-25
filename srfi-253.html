@@ -170,10 +170,13 @@ other escape sequences should be supported. This procedure shall not
 strip whitespace present in the documentation text.</p>
 
   <p>It is an error if the attached <code>#? ... ?#</code> syntax is read,
-but there are no more objects to read before the port is exhausted, or
-the next object read is also a documentation comment. It is an error if
-an unattached documentation comment appears after the dot in a dotted
-list.</p>
+but there are no more objects to read before the expression ends or the
+port is exhausted. It is an error if the attached <code>#? ... ?#</code>
+syntax is read, but next read object is a documentation comment of any
+kind.</p>
+
+  <p>It is an error if the unattached <code>#* ... *#</code> syntax
+appears after the dot in a dotted list.</p>
 
   <p>If the <code>port</code> argument is not supplied,
 <code>(current-input-port)</code> shall be used.</p>
