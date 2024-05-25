@@ -256,12 +256,12 @@ Reader support for the syntax extensions is implementation-specific, and is not
 provided.
 
 The sample implementation is available [in the
-repo](https://github.com/scheme-requests-for-implementation/srfi-2xx) or
-[directly](https://srfi.schemers.org/srfi-2xx/doc-lib.sld).
+repo](https://github.com/scheme-requests-for-implementation/srfi-253) or
+[directly](https://srfi.schemers.org/srfi-253/doc-lib.sld).
 
 A test suite for the documentation library is available [in the
-repo](https://github.com/scheme-requests-for-implementation/srfi-2xx/blob/master/doc-lib-tests.scm)
-or [directly](https://srfi.schemers.org/srfi-2xx/doc-lib-tests.scm).
+repo](https://github.com/scheme-requests-for-implementation/srfi-253/blob/master/doc-lib-tests.scm)
+or [directly](https://srfi.schemers.org/srfi-253/doc-lib-tests.scm).
 
 ## Acknowledgements
 
