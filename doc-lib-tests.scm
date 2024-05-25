@@ -59,6 +59,20 @@
   (let ((obj (read-doc (open-input-string no-doc))))
     (test-assert (equal? '(+ 3 2) obj))))
 
+(define empty "#??#3")
+(define empty2 "#**#3")
+(test-group "read-doc/none"
+  (let ((obj (read-doc (open-input-string empty)))
+        (obj2 (read-doc (open-input-string empty2))))
+    (test-assert (doc-attached? obj))
+    (test-assert (string=? (doc-text obj) ""))
+    (test-assert (= 3 (doc-content obj)))
+    (test-assert (list? (doc-alist obj)))
+    (test-assert (not (doc-attached? obj2)))
+    (test-assert (string=? (doc-text obj2) ""))
+    (test-assert (not (doc-content obj2)))
+    (test-assert (list? (doc-alist obj2)))))
+
 (define invalid "(+ 1 2 #? An expression is missing after this. ?#)")
 (test-group "read-doc/error"
   (test-error (read-doc (open-input-string invalid))))
