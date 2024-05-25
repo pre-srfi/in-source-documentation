@@ -48,12 +48,6 @@
     (define (read-doc-internal port)
       (read-with-shared-structure port))
 
-    (define-record-type <tmp>
-      (make-tmp attached? text)
-      tmp?
-      (attached? tmp-attached?)
-      (text tmp-text))
-
     (define (skip-doc-comment attached? c)
       (define (skip-doc-comment2 in . rest)
         (let ((p (peek-char in)))

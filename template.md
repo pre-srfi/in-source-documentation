@@ -1,8 +1,8 @@
 ## Abstract
 
 This specifies reader syntax extensions for in-source documentation. The syntax
-</code>#? ... ?#</code> adds documentation text to the subsequent expression.
-The syntax <code>#* ... *#</code> adds documentation text that is not attached
+`#? ... ?#` adds documentation text to the subsequent expression.
+The syntax `#* ... *#` adds documentation text that is not attached
 to any particular expression. A Scheme library for reading in-source
 documentation is also specified.
 
@@ -77,7 +77,7 @@ HTML or LaTeX.
 ### Syntax
 
 This SRFI extends the specifications of comments in
-[R7RS section 2.2](https://small.r7rs.org/attachment/r7rs.pdf#section.2.2)>
+[R7RS section 2.2](https://small.r7rs.org/attachment/r7rs.pdf#section.2.2)
 as follows:
 
 The sequences `#?` and `#*` indicate the start of a documentation comment. The
@@ -245,7 +245,7 @@ argument is a `doc` record. Otherwise, returns `#f`.
 
 ## Implementation
 
-A conformant sample implementations of the documentation library is provided. It
+A conformant sample implementation of the documentation library is provided. It
 requires R7RS-small.
 
 Reader support for the syntax extensions is implementation-specific, and is not
@@ -260,6 +260,9 @@ repo](https://github.com/scheme-requests-for-implementation/srfi-2xx/blob/master
 or [directly](https://srfi.schemers.org/srfi-2xx/doc-lib-tests.scm).
 
 ## Acknowledgements
+
+Thank you to Alex Shinn and the Chibi Scheme contributors. The Chibi reader is
+used as part of the sample implementation.
 
 Thank you to the members of the SRFI mailing list for their input during the
 drafting process.

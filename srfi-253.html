@@ -41,7 +41,7 @@ SPDX-License-Identifier: MIT
 
 
   <p>This specifies reader syntax extensions for in-source documentation.
-The syntax <code></code>#? ... ?#<code></code> adds documentation text to the
+The syntax <code>#? ... ?#</code> adds documentation text to the
 subsequent expression. The syntax <code>#* ... *#</code> adds
 documentation text that is not attached to any particular expression. A
 Scheme library for reading in-source documentation is also
@@ -59,7 +59,7 @@ HTML.</p>
   <p>One of the advantages of in-source documentation is that when reading
 code, there is no need to simulatenously navigate and switch between a
 separate external information source, like an Info page or website. And
-oftentimes, reading an object's in-source documentation will make
+oftentimes, reading an object’s in-source documentation will make
 reading its code unnecessary.</p>
 
   <p>Keeping documentation up-to-date is another task made easier by
@@ -71,28 +71,30 @@ the correct location in an external documentation file.</p>
 Server Protocol</a> (LSP) allow in-source documentation to be
 automatically retrieved and displayed by text editors and Integrated
 Development Environments (IDE). LSP clients are included in an
-increasing number of editors (including Emacs), but LSP servers are only
-presently available for a small number of Scheme implementations.</p>
+increasing number of editors (including Emacs), but LSP servers are
+presently available for only a small number of Scheme
+implementations.</p>
 
   <p>Introducing a flexible in-source documentation system as an SRFI will
 standardize a stable interface that can be used in multiple
-implementations, to generate typeset documentation and to provide a base
-for new editor tools and integrations.</p>
+implementations, both to generate typeset documentation and to provide a
+base for new editor tools and integrations.</p>
 
-  <p>This SRFI intentionally does not specify a command-line interfacefor
-a program that exports in-source documentation. Such an interface would
-be better specified in a SRFI for package management operations. It also
-does not specify a format for the in-source documentation text, as
-exporters may choose to support different markup formats.</p>
+  <p>This SRFI intentionally does not specify a command-line interface for
+a program to export in-source documentation. Such an interface would be
+better specified in a SRFI for package management. It also does not
+specify a format for the extracted in-source documentation text, as
+exporters may choose to support any number of different markup
+formats.</p>
 
   <p>In-source documentation is not to be confused with literate
 programming (LP). For in-source documentation systems, documentation is
 extracted from the source code. For LP systems, source code is extracted
-(or "tangled", in LP terminology) from the documentation.</p>
+(or “tangled”, in LP terminology) from the documentation.</p>
 
   <h3 id="existing-solutions">Existing solutions</h3>
 
-  <p>Chicken Scheme's <a href="https://wiki.call-cc.org/eggref/4/hahn">Hahn</a> library provided
+  <p>Chicken Scheme’s <a href="https://wiki.call-cc.org/eggref/4/hahn">Hahn</a> library provided
 an in-source documentation system for Chicken 4, but it has not been
 updated to Chicken 5. It uses a custom S-expression-based markup format,
 and documentation is placed between the identifier name and body of
@@ -109,9 +111,9 @@ HTML.</p>
 provided an in-source documentation library for R4RS/R5RS, as part of
 the larger LAML library. It used a custom markup system placed inside
 regular Scheme comments, and assigned meaning to the number of
-semicolons preceeding the comment text. It exported to HTML.</p>
+semicolons preceding the comment text. It exported to HTML.</p>
 
-  <p>Racket's <a href="https://docs.racket-lang.org/scribble/srcdoc.html">srcdoc</a>
+  <p>Racket’s <a href="https://docs.racket-lang.org/scribble/srcdoc.html">srcdoc</a>
 module provides special forms to document procedures, variables, and
 data structures. In-source documentation uses the Scribble markup
 format, and can be exported to HTML or LaTeX.</p>
@@ -121,7 +123,7 @@ format, and can be exported to HTML or LaTeX.</p>
   <h3 id="syntax">Syntax</h3>
 
   <p>This SRFI extends the specifications of comments in <a href="https://small.r7rs.org/attachment/r7rs.pdf#section.2.2">R7RS
-section 2.2</a>> as follows:</p>
+section 2.2</a> as follows:</p>
 
   <p>The sequences <code>#?</code> and <code>#*</code> indicate the start
 of a documentation comment. The documentation comment continues, and may
@@ -154,21 +156,24 @@ section 7.1.1</a>, as follows:</p>
 
   <p>The <code>read-doc</code> procedure converts in-source documentation
 text and external representations of Scheme objects into
-<code>doc</code> records. It returns the next <code>doc</code> record
-parsable from the given textual input port, updating <code>port</code>
-to point to the first character past the end of the external
-representation of the unattached in-source documentation text or
-attached Scheme object.</p>
+<code>doc</code> records or objects. It returns the next
+<code>doc</code> record or object parsable from the given textual input
+port, updating <code>port</code> to point to the first character past
+the end of the unattached in-source documentation text, the
+documentation-attached Scheme object, or non-documented external
+representation of the object.</p>
 
   <p>When parsing in-source documentation text, this procedure must
 recognize the escape sequences <code>\#</code> and <code>\\</code>, and
 convert them to <code>#</code> and <code>\</code>, respectively. No
-other escape sequences may be supported. This procedure shall not strip
-whitespace present in the documentation text.</p>
+other escape sequences should be supported. This procedure shall not
+strip whitespace present in the documentation text.</p>
 
   <p>It is an error if the attached <code>#? ... ?#</code> syntax is read,
-but there are no more Scheme objects to read before the port is
-exhausted.</p>
+but there are no more objects to read before the port is exhausted, or
+the next object read is also a documentation comment. It is an error if
+an unattached documentation comment appears after the dot in a dotted
+list.</p>
 
   <p>If the <code>port</code> argument is not supplied,
 <code>(current-input-port)</code> shall be used.</p>
@@ -183,9 +188,9 @@ exhausted.</p>
 
 (define no-doc "(+ 3 2)")
 (read-doc (open-input-string no-doc))
-;; => (eof-object)
+;; => '(+ 3 2)
 
-(define invalid "#? An expression is missing after this. ?#")
+(define invalid "(+ 1 2 #? An expression is missing after this. ?# )")
 (read-doc (open-input-string invalid))
 ;; => error
 
@@ -193,10 +198,10 @@ exhausted.</p>
 (read-doc (open-input-string nested))
 ;; => (doc #t " Outer "
            `(+ 1 ,(doc #t " Inner "
-                       `(+ 2 ,(doc #f " Innermost " #f '()) 3))
-                   ()))</code></pre>
-<br>
+                       `(+ 2 ,(doc #f " Innermost " #f '()) 3) '()))
+                   '())</code></pre>
 
+  <p><br></p>
 
   <p>The following procedures may be automatically implemented using
 <code>define-record-type</code>:</p>
@@ -217,8 +222,8 @@ as its location in the source file.</p>
   <pre><code>(make-doc #t "Three plus two." '(+ 3 2)
           '((source-location . (22 42))))
 ;; => object of type 'doc'</code></pre>
-<br>
 
+  <p><br></p>
 
   <pre><code>(doc-attached? doc-object)</code></pre>
 
@@ -227,8 +232,8 @@ record, a boolean.</p>
 
   <pre><code>(doc-attached? (make-doc #t " Three plus two. " '(+ 3 2) '()))
 ;; => #t</code></pre>
-<br>
 
+  <p><br></p>
 
   <pre><code>(doc-text doc-object)</code></pre>
 
@@ -237,8 +242,8 @@ string.</p>
 
   <pre><code>(doc-text (make-doc #t "Three plus two." '(+ 3 2) '()))
 ;; => "Three plus two."</code></pre>
-<br>
 
+  <p><br></p>
 
   <pre><code>(doc-content doc-object)</code></pre>
 
@@ -248,8 +253,8 @@ list, it may contain nested <code>doc</code> records.</p>
 
   <pre><code>(doc-content (make-doc #t " Three plus two. " '(+ 3 2) '()))
 ;; => '(+ 3 2)</code></pre>
-<br>
 
+  <p><br></p>
 
   <pre><code>(doc-alist doc-object)</code></pre>
 
@@ -259,8 +264,8 @@ association list.</p>
   <pre><code>(doc-alist (make-doc #t " Three plus two. " '(+ 3 2)
                      '((source-location . (22 42)))))
 ;; => '((source-location . (22 42)))</code></pre>
-<br>
 
+  <p><br></p>
 
   <pre><code>(doc? object)</code></pre>
 
@@ -275,7 +280,7 @@ returns <code>#f</code>.</p>
 
   <h2 id="implementation">Implementation</h2>
 
-  <p>A conformant sample implementations of the documentation library is
+  <p>A conformant sample implementation of the documentation library is
 provided. It requires R7RS-small.</p>
 
   <p>Reader support for the syntax extensions is implementation-specific,
@@ -288,6 +293,9 @@ the repo</a> or <a href="https://srfi.schemers.org/srfi-2xx/doc-lib.sld">directl
 the repo</a> or <a href="https://srfi.schemers.org/srfi-2xx/doc-lib-tests.scm">directly</a>.</p>
 
   <h2 id="acknowledgements">Acknowledgements</h2>
+
+  <p>Thank you to Alex Shinn and the Chibi Scheme contributors. The Chibi
+reader is used as part of the sample implementation.</p>
 
   <p>Thank you to the members of the SRFI mailing list for their input
 during the drafting process.</p>
