@@ -52,7 +52,7 @@
       (define (skip-doc-comment2 in . rest)
         (let ((p (peek-char in)))
           (when (eof-object? p)
-            (read-error "EOF while in a documentation comment."))
+            (error "EOF while in a documentation comment."))
           (cond ((and (not (null? rest))
                       (char=? (car rest) c)
                       (char=? p #\#))
@@ -207,7 +207,7 @@
                      (n (string->number str base))
                      (c (peek-char in)))
                 (if (or (not n) (not (or (eof-object? c) (memv c delimiters))))
-                    (read-error "read error: invalid number syntax" str c)
+                    (error "read error: invalid number syntax" str c)
                     n)))
             (define (read-float-tail in) ;; called only after a leading period
               (let lp ((res 0.0) (k 0.1))
@@ -219,7 +219,7 @@
                                   k))
                         (* k 0.1)))
                    ((or (eof-object? c) (memv c delimiters)) res)
-                   (else (read-error "invalid char in float syntax" c))))))
+                   (else (error "invalid char in float syntax" c))))))
             (define (read-name c in)
               (let lp ((ls (if (char? c) (list c) '())))
                 (let ((c (peek-char in)))
@@ -233,7 +233,7 @@
                             (string->number (substring name 1 (string-length name))
                                             16))
                        => integer->char)
-                      (else (read-error "unknown char name" name)))))
+                      (else (error "unknown char name" name)))))
             (define (read-type-id in)
               (let ((ch (peek-char in)))
                 (cond
@@ -242,11 +242,11 @@
                   (let ((id (read in)))
                     (cond ((eq? id 't) #t)
                           ((integer? id) id)
-                          (else (read-error "invalid type identifier" id)))))
+                          (else (error "invalid type identifier" id)))))
                  ((eqv? ch #\")
                   (read in))
                  (else
-                  (read-error "invalid type identifier syntax" ch)))))
+                  (error "invalid type identifier syntax" ch)))))
             (define (read-escape-sequence)
               (let ((ch (read-char in)))
                 (cond
@@ -263,7 +263,7 @@
                      (let* ((n (read-number 16))
                             (ch2 (read-char in)))
                        (if (not (and n (eqv? ch2 #\;)))
-                           (read-error "invalid string escape" n ch2)
+                           (error "invalid string escape" n ch2)
                            (integer->char n))))
                     (else ch))))))
             (define (read-delimited terminal)
@@ -287,7 +287,7 @@
                     (skip-whitespace-and-line-comments in)
                     (cond
                      ((eof-object? (peek-char in))
-                      (read-error "missing closing }"))
+                      (error "missing closing }"))
                      ((eqv? #\} (peek-char in))
                       (read-char in)
                       (let ((res ((make-constructor #f type))))
@@ -301,33 +301,33 @@
                      (else (lp (cons (read-one in) ls))))))))
             (define (read-hash in)
               (if (eof-object? (peek-char in))
-                  (read-error "read error: incomplete # found at end of input"))
+                  (error "read error: incomplete # found at end of input"))
               (case (char-downcase (peek-char in))
                 ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                  (let* ((str (read-label '()))
                         (n (string->number str)))
                    (if (not n)
-                       (read-error "read error: invalid reference" str))
+                       (error "read error: invalid reference" str))
                    (cond
                     ((eqv? #\= (peek-char in))
                      (if (assv n shared)
-                         (read-error "read error: duplicate label" str))
+                         (error "read error: duplicate label" str))
                      (read-char in)
                      (let* ((cell (list #f))
                             (thunk (lambda () (car cell))))
                        (set! shared (cons (cons n thunk) shared))
                        (let ((x (read-one in)))
                          (if (hole? x)
-                             (read-error "read error: self label reference" n))
+                             (error "read error: self label reference" n))
                          (set-car! cell x)
                          x)))
                     ((eqv? #\# (peek-char in))
                      (read-char in)
                      (cond
                       ((assv n shared) => cdr)
-                      (else (read-error "read error: unknown reference" n))))
+                      (else (error "read error: unknown reference" n))))
                     (else
-                     (read-error "read error: expected # after #n"
+                     (error "read error: expected # after #n"
                                  (read-char in))))))
                 ((#\;)
                  (read-char in)
@@ -351,7 +351,7 @@
                         ((string-ci=? name "no-fold-case")
                          (set-port-fold-case! in #f))
                         (else            ;; assume a #!/bin/bash line
-                         (read-error "unknown #! symbol" name)))
+                         (error "unknown #! symbol" name)))
                        (read-one in))))))
                 ((#\() (list->vector (read-one in)))
                 ((#\') (read-char in) (list 'syntax (read-one in)))
@@ -364,7 +364,7 @@
                 ((#\t)
                  (let ((s (read-name #f in)))
                    (or (string-ci=? s "t") (string-ci=? s "true")
-                       (read-error "bad # syntax" s))))
+                       (error "bad # syntax" s))))
                 ((#\f)
                  (let ((s (read-name #f in)))
                    (cond
@@ -379,7 +379,7 @@
                     ((member s '("f64" "F64"))
                      (list->uvector F64 (read in)))
                     (else
-                     (read-error "bad # syntax" s)))))
+                     (error "bad # syntax" s)))))
                 ((#\d) (read-char in) (read in))
                 ((#\x) (read-char in) (read-number 16))
                 ((#\o) (read-char in) (read-number 8))
@@ -397,7 +397,7 @@
                         (etype (resolve-uniform-type c prec))
                         (ls (read-one in)))
                    (if (not (list? ls))
-                       (read-error "invalid uniform vector syntax" ls))
+                       (error "invalid uniform vector syntax" ls))
                    (list->uvector etype ls)))
                 ((#\\)
                  (read-char in)
@@ -412,15 +412,14 @@
                  (let ((text (skip-doc-attached in))
                        (one (read-one in)))
                    (when (doc? one)
-                     (read-error
-                      "Consecutive attached documentation comments."))
+                     (error "Consecutive attached documentation comments."))
                    (make-doc #t text one '())))
                 ((#\*)
                  (read-char in)
                  (make-doc #f (skip-doc-unattached in) #f '()))
                 ;; END EDITS
                 (else
-                 (read-error "unknown # syntax: " (peek-char in)))))
+                 (error "unknown # syntax: " (peek-char in)))))
             (define (read-one in)
               (cond
                ((not (skip-whitespace-and-sexp-comments in read-one))
@@ -449,7 +448,7 @@
                               (let ((tail (read-one in)))
                                 (cond
                                  ((null? res)
-                                  (read-error "dot before any elements in list"))
+                                  (error "dot before any elements in list"))
                                  ((and (skip-whitespace-and-sexp-comments
                                         in read-one)
                                        (eqv? #\) (peek-char in)))
@@ -459,7 +458,7 @@
                                   (read-incomplete-error
                                    "unterminated dotted list"))
                                  (else
-                                  (read-error "expected end of list after dot")))))
+                                  (error "expected end of list after dot")))))
                              ((char-numeric? (peek-char in))
                               (lp (cons (read-float-tail in) res)))
                              (else
