@@ -71,10 +71,10 @@
           (loop docs obj)))))
 
 (define (document-file fpath)
-  ;; Exporter programs can parameterize documentation-format, based on the value
+  ;; Exporter programs can parameterize documentation-format based on the value
   ;; of a CLI flag. Exporter libraries can then use the parameterized value.
-  ;; document-format can also be parameterized in code, or maybe even be
-  ;; inferred from the documentation text.
+  ;; documentation-format can also be parameterized by code, by a special string
+  ;; inside the documentation text, or be inferred from the documentation text.
   (unless (eq? (documentation-format) 'text)
     (error "Unrecognized documentation format: " (documentation-format)))
   (let ((docs (call-with-input-file fpath

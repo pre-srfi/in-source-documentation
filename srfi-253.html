@@ -126,11 +126,11 @@ start of a documentation comment. The documentation comment continues,
 and may span multiple lines, until a closing <code>*|#</code> or
 <code>?|#</code> appears, respectively.</p>
 
-  <p>When reading a source file in order to extract documentation, nested
-block comments within the documentation comment shall be ignored. When
-reading a source file in order to extract documentation, it is an error
-if the matching closing character sequence is omitted. If a nested
-documentation comment appears within a block comment, it shall be
+  <p>When reading a source file in order to extract documentation, an
+exception shall be raised if the matching closing character sequence is
+omitted. If a nested documentation comment appears within a block
+comment, it shall be ignored for documentation purposes. If a nested
+block comment appears within a documentation comment, it shall be
 ignored for documentation purposes.</p>
 
   <p>This SRFI does not change the lexical syntax of block comments, as
@@ -158,11 +158,11 @@ convert them to <code>#</code> and <code>\</code>, respectively. No
 other escape sequences should be supported. This procedure shall not
 strip whitespace present in the documentation text.</p>
 
-  <p>It is an error if an attached documentation comment is read, but
-there are no more objects to read before the expression ends or the port
-is exhausted. It is an error if an attached documentation comment is
-read, but the next object read is a documentation comment of either
-kind.</p>
+  <p>An exception should be raised if an attached documentation comment is
+read, but there are no more objects to read before the expression ends
+or the port is exhausted. An exception should be raised if an attached
+documentation comment is read, but the next object read is a
+documentation comment of either kind.</p>
 
   <p>It is an error if an unattached documentation comment appears after
 the dot in a dotted list.</p>

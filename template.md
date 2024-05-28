@@ -80,11 +80,11 @@ The sequences `#|*` and `#|?` indicate the start of a documentation comment. The
 documentation comment continues, and may span multiple lines, until a closing
 `*|#` or `?|#` appears, respectively.
 
-When reading a source file in order to extract documentation, nested block
-comments within the documentation comment shall be ignored. When reading a
-source file in order to extract documentation, it is an error if the matching
-closing character sequence is omitted. If a nested documentation comment appears
-within a block comment, it shall be ignored for documentation purposes.
+When reading a source file in order to extract documentation, an exception shall
+be raised if the matching closing character sequence is omitted. If a nested
+documentation comment appears within a block comment, it shall be ignored for
+documentation purposes. If a nested block comment appears within a documentation
+comment, it shall be ignored for documentation purposes.
 
 This SRFI does not change the lexical syntax of block comments, as specified in
 [R7RS section 2.2](https://small.r7rs.org/attachment/r7rs.pdf#section.2.2) and
@@ -110,10 +110,10 @@ escape sequences `\#` and `\\`, and convert them to `#` and `\`, respectively.
 No other escape sequences should be supported. This procedure shall not strip
 whitespace present in the documentation text.
 
-It is an error if an attached documentation comment is read, but there are no
-more objects to read before the expression ends or the port is exhausted. It is
-an error if an attached documentation comment is read, but the next object read
-is a documentation comment of either kind.
+An exception should be raised if an attached documentation comment is read, but
+there are no more objects to read before the expression ends or the port is
+exhausted. An exception should be raised if an attached documentation comment is
+read, but the next object read is a documentation comment of either kind.
 
 It is an error if an unattached documentation comment appears after the dot in a
 dotted list.

@@ -25,6 +25,7 @@
 (define-library (doc-lib)
   (import (scheme base)
           (scheme char)
+          (scheme write)
           (scheme read))
   (export make-documentation documentation? documentation-attached?
           documentation-text documentation-content documentation-alist
@@ -80,16 +81,21 @@ The value of the parameter must be a symbol.
     (define (read-doc-internal port)
       (read-with-shared-structure port))
 
-    (define (skip-doc-comment attached? c)
+    (define (skip-doc-comment attached?)
       (define (skip-doc-comment2 in . rest)
         (let ((p (peek-char in)))
           (when (eof-object? p)
             (error "EOF while in a documentation comment."))
           (cond ((and (not (null? rest))
-                      (char=? (car rest) c)
+                      (char=? (car rest) #\|)
                       (char=? p #\#))
+                 (when (or (< (length rest) 2)
+                           (and attached (not (eqv? #\* (cadr rest))))
+                           (and (not attached) (not (eqv? #\? (cadr rest)))))
+                   (error
+                    "Documentation comment ended without matching character."))
                  (read-char in)
-                 (list->string (reverse (cdr rest))))
+                 (list->string (reverse (cddr rest))))
               ((and (not (null? rest))
                     (char=? (car rest) #\\)
                     (char=? p #\\))
@@ -103,8 +109,8 @@ The value of the parameter must be a symbol.
                (apply skip-doc-comment2 in (cons (read-char in) rest))))))
       skip-doc-comment2)
 
-    (define skip-doc-attached (skip-doc-comment #t #\*))
-    (define skip-doc-unattached (skip-doc-comment #f #\?))
+    (define skip-doc-attached (skip-doc-comment #t))
+    (define skip-doc-unattached (skip-doc-comment #f))
 
     ;; Taken from Chibi Scheme's lib/srfi/38.scm reader.
     ;; See "BEGIN EDITS" comment.
