@@ -39,21 +39,19 @@
     (test-assert (equal? (documentation-content obj) '(+ 3 2)))
     (test-assert (equal? (documentation-alist obj) '((a . 1))))))
 
-(define attached "#|* The ?|\\# number \\\\ 3. *|#3")
+(define attached "#|* The *|\\# number \\\\ 3. *|#3")
 (test-group "read-documentation/attached"
   (let ((obj (read-documentation (open-input-string attached))))
-    (display obj)
-    (exit 0)
     (test-assert (documentation-attached? obj))
-    (test-assert (string=? (documentation-text obj) " The ?# number \\ 3. "))
+    (test-assert (string=? (documentation-text obj) " The *|# number \\ 3. "))
     (test-assert (= 3 (documentation-content obj)))
     (test-assert (list? (documentation-alist obj)))))
 
-(define unattached "#|? Hello world. ?\\# ?|#")
+(define unattached "#|? Hello world. ?|\\# ?|#")
 (test-group "read-documentation/unattached"
   (let ((obj (read-documentation (open-input-string unattached))))
     (test-assert (not (documentation-attached? obj)))
-    (test-assert (string=? (documentation-text obj) " Hello world. *# "))
+    (test-assert (string=? (documentation-text obj) " Hello world. ?|# "))
     (test-assert (not (documentation-content obj)))
     (test-assert (list? (documentation-alist obj)))))
 

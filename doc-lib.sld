@@ -25,7 +25,6 @@
 (define-library (doc-lib)
   (import (scheme base)
           (scheme char)
-          (scheme write)
           (scheme read))
   (export make-documentation documentation? documentation-attached?
           documentation-text documentation-content documentation-alist
@@ -87,23 +86,23 @@ The value of the parameter must be a symbol.
           (when (eof-object? p)
             (error "EOF while in a documentation comment."))
           (cond ((and (not (null? rest))
-                      (char=? (car rest) #\|)
-                      (char=? p #\#))
+                      (eqv? (car rest) #\|)
+                      (eqv? p #\#))
                  (when (or (< (length rest) 2)
-                           (and attached (not (eqv? #\* (cadr rest))))
-                           (and (not attached) (not (eqv? #\? (cadr rest)))))
+                           (and attached? (not (eqv? #\* (cadr rest))))
+                           (and (not attached?) (not (eqv? #\? (cadr rest)))))
                    (error
                     "Documentation comment ended without matching character."))
                  (read-char in)
                  (list->string (reverse (cddr rest))))
               ((and (not (null? rest))
-                    (char=? (car rest) #\\)
-                    (char=? p #\\))
+                    (eqv? (car rest) #\\)
+                    (eqv? p #\\))
                (read-char in)
                (apply skip-doc-comment2 in rest))
               ((and (not (null? rest))
-                    (char=? (car rest) #\\)
-                    (char=? p #\#))
+                    (eqv? (car rest) #\\)
+                    (eqv? p #\#))
                (apply skip-doc-comment2 in (cons (read-char in) (cdr rest))))
               (else
                (apply skip-doc-comment2 in (cons (read-char in) rest))))))
@@ -144,15 +143,24 @@ The value of the parameter must be a symbol.
          (skip-line in)
          (skip-whitespace-and-line-comments in))))
 
-    (define (skip-comment in depth)
+    ;; BEGIN EDITS - added read argument
+    (define (skip-comment in depth read)
       (case (read-char in)
-        ((#\#) (skip-comment in (if (eqv? #\| (peek-char in)) (+ depth 1) depth)))
+        ((#\#) (skip-comment in (if (eqv? #\| (read-char in)) (+ depth 1) depth)
+                             read))
         ((#\|) (if (eqv? #\# (peek-char in))
-                   (if (zero? depth) (read-char in) (skip-comment in (- depth 1)))
-                   (skip-comment in depth)))
+                   (if (zero? depth)
+                       #f
+                       (skip-comment in (- depth 1) read))
+                   (skip-comment in depth read)))
+        ((#\*) (let ((text (skip-doc-attached in)))
+                 (make-documentation #t text (read in) '())))
+        ((#\?) (let ((text (skip-doc-unattached in)))
+                 (make-documentation #f text #f '())))
         (else (if (eof-object? (peek-char in))
                   (read-incomplete-error "unterminated #| comment")
-                  (skip-comment in depth)))))
+                  (skip-comment in depth read)))))
+    ;; END EDITS
 
     ;; returns #f if a trailing # was consumed
     (define (skip-whitespace-and-sexp-comments in read)
@@ -164,9 +172,11 @@ The value of the parameter must be a symbol.
                (read-char in)
                (read in)
                (skip-whitespace-and-sexp-comments in read))
-              ((eqv? #\| (peek-char in))
-               (skip-comment in 0)
-               (skip-whitespace-and-sexp-comments in read))
+              ;; BEGIN EDITS
+              ;; ((eqv? #\| (peek-char in))
+              ;;  (skip-comment in 0)
+              ;;  (skip-whitespace-and-sexp-comments in read))
+              ;; END EDITS
               (else #f)))
        (else
         #t)))
@@ -372,8 +382,11 @@ The value of the parameter must be a symbol.
                  (read-one in) ;; discard
                  (read-one in))
                 ((#\|)
-                 (skip-comment in 0)
-                 (read-one in))
+                 ;; BEGIN EDITS
+                 ;; (skip-comment in 0)
+                 ;; (read-one in))
+                 (skip-comment in 0 read-one))
+                 ;; END EDITS
                 ((#\!)
                  (read-char in)
                  (let ((c (peek-char in)))
