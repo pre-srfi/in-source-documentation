@@ -21,9 +21,12 @@
            (if (pair? (cadr expr))
                (format "* Procedure ~a\nArguments: ~a\n"
                        (car (cadr expr))
-                       (if (pair? (cdr (cadr expr)))
-                           (cdr (cadr expr))
-                           "Variadic"))
+                       (cond ((null? (cdr (cadr expr)))
+                              "Thunk")
+                             ((pair? (cdr (cadr expr)))
+                              (cdr (cadr expr)))
+                             (else
+                              "Variadic")))
                (format "* Variable ~a\n"
                        (cadr expr))))
           ((eq? head 'define-record-type)
