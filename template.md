@@ -1,10 +1,10 @@
 ## Abstract
 
-This specifies reader syntax extensions for in-source documentation. The syntax
-`#? ... ?#` adds documentation text to the subsequent expression.
-The syntax `#* ... *#` adds documentation text that is not attached
-to any particular expression. A Scheme library for reading in-source
-documentation is also specified.
+This specifies a convention for in-source documentation within block comments.
+The syntax `#|* ... *|#` adds documentation text to the subsequent expression.
+The syntax `#|? ... ?|#` adds documentation text that is not attached to any
+particular expression. A Scheme library for reading in-source documentation is
+also specified.
 
 ## Rationale
 
@@ -38,9 +38,9 @@ tools and integrations.
 
 This SRFI intentionally does not specify a command-line interface for a program
 that exports in-source documentation. Such an interface would be better
-specified in a SRFI for package management. It also does not specify a format
-for the extracted in-source documentation text, as exporters may choose to
-support any number of different markup formats.
+specified in a SRFI for package management. It also does not specify an
+interface to control the output of an exporter, as exporter behavior is outside
+the scope of this SRFI.
 
 In-source documentation is not to be confused with literate programming (LP).
 For in-source documentation systems, documentation is extracted from the source
@@ -76,86 +76,102 @@ HTML or LaTeX.
 
 ### Syntax
 
-This SRFI extends the specifications of comments in
-[R7RS section 2.2](https://small.r7rs.org/attachment/r7rs.pdf#section.2.2)
-as follows:
+The sequences `#|*` and `#|?` indicate the start of a documentation comment. The
+documentation comment continues, and may span multiple lines, until a closing
+`*|#` or `?|#` appears, respectively.
 
-The sequences `#?` and `#*` indicate the start of a documentation comment. The
-documentation comment continues, and may span multiple lines, until a matching
-`?#` or `*#` appears, respectively. If the matching closing character sequence
-is omitted, an error is signaled. Documentation comments are visible to Scheme
-as a single whitespace. Documentation comments may not be nested: a `#*` or `#?`
-sequence inside of a documentation comment is ignored.
+When reading a source file in order to extract documentation, nested block
+comments within the documentation comment shall be ignored. When reading a
+source file in order to extract documentation, it is an error if the matching
+closing character sequence is omitted. If a nested documentation comment appears
+within a block comment, it shall be ignored for documentation purposes.
 
-This SRFI also adds four productions in the specification of lexical structure,
-[R7RS section
-7.1.1](https://small.r7rs.org/attachment/r7rs.pdf#subsection.7.1.1), as follows:
-
-```
-<attached documentation comment> -->
-  #? <attached documentation comment text>* ?#
-
-<attached documentation comment text> -->
-  <character sequence not containing ?#>
-
-<unattached documentation comment> -->
-  #* <unattached documentation comment text>* *#
-
-<unattached documentation comment text> -->
-  <character sequence not containing *#>
-```
+This SRFI does not change the lexical syntax of block comments, as specified in
+[R7RS section 2.2](https://small.r7rs.org/attachment/r7rs.pdf#section.2.2) and
+[SRFI 30](https://srfi.schemers.org/srfi-30/srfi-30.html). The reader's behavior
+shall not change when a documentation comment sequence is encountered.
 
 ### Documentation library
 
 ```
-(read-doc [port])
+(read-documentation [port])
 ```
-The `read-doc` procedure converts in-source documentation text and
-external representations of Scheme objects into `doc` records or objects. It
-returns the next `doc` record or object parsable from the given textual input
-port, updating `port` to point to the first character past the end of
-the unattached in-source documentation text, the documentation-attached Scheme
-object, or non-documented external representation of the object.
+
+The `read-documentation` procedure converts in-source documentation text and
+external representations of Scheme objects into `documentation` records or
+objects. It returns the next `documentation` record or object parsable from the
+given textual input port, updating `port` to point to the first character past
+the end of the unattached in-source documentation text, the
+documentation-attached Scheme object, or non-documented external
+representation of the object.
 
 When parsing in-source documentation text, this procedure must recognize the
 escape sequences `\#` and `\\`, and convert them to `#` and `\`, respectively.
 No other escape sequences should be supported. This procedure shall not strip
 whitespace present in the documentation text.
 
-It is an error if the attached `#? ... ?#` syntax is read, but there are no more
-objects to read before the expression ends or the port is exhausted. It is an
-error if the attached `#? ... ?#` syntax is read, but next read object is a
-documentation comment of any kind.
+It is an error if an attached documentation comment is read, but there are no
+more objects to read before the expression ends or the port is exhausted. It is
+an error if an attached documentation comment is read, but the next object read
+is a documentation comment of either kind.
 
-It is an error if the unattached `#* ... *#` syntax appears after the dot in a
+It is an error if an unattached documentation comment appears after the dot in a
 dotted list.
 
 If the `port` argument is not supplied, `(current-input-port)` shall be used.
 
 ```
-(define attached "#? The number 3. ?#3")
-(read-doc (open-input-string attached))
-;; => (doc #t " The number 3. " 3 '())
+(define attached "#|* The number 3. *|#3")
+(read-documentation (open-input-string attached))
+;; => (make-documentation #t " The number 3. " 3 '())
 
-(define unattached "#* Hello world. */# *#")
-(read-doc (open-input-string unattached))
-;; => (doc #f " Hello world. *# " #f '())
+(define unattached "#|? Hello world. ?|\# ?|#")
+(read-documentation (open-input-string unattached))
+;; => (make-documentation #f " Hello world. ?|# " #f '())
 
-(define no-doc "(+ 3 2)")
-(read-doc (open-input-string no-doc))
+(define no-documentation "(+ 3 2)")
+(read-documentation (open-input-string no-documentation))
 ;; => '(+ 3 2)
 
-(define invalid "(+ 1 2 #? An expression is missing after this. ?# )")
-(read-doc (open-input-string invalid))
+(define invalid "(+ 1 2 #|* An expression is missing after this. *|# )")
+(read-documentation (open-input-string invalid))
 ;; => error
 
-(define nested "#? Outer #? (+ 1 #? Inner ?# (+ 2 #* Innermost *# 3))")
-(read-doc (open-input-string nested))
-;; => (doc #t " Outer "
-           `(+ 1 ,(doc #t " Inner "
-                       `(+ 2 ,(doc #f " Innermost " #f '()) 3)
-                       '()))
-           '())
+(define nested "#|* Outer #|* (+ 1 #|* Inner *|# (+ 2 #|? Innermost ?|# 3))")
+(read-documentation (open-input-string nested))
+;; => (make-documentation
+        #t " Outer "
+        `(+ 1 ,(make-documentation
+                 #t " Inner "
+                 `(+ 2 ,(make-documentation
+                          #f " Innermost "
+                          #f
+                          '())
+                     3)
+                 '()))
+        '())
+```
+<br/>
+
+```
+(documentation-format [symbol])
+```
+
+The `documentation-format` parameter specifies the markup language documentation
+comments are written in. The value of the parameter must be a symbol. The value
+`'text` shall be supported, to indicate that documentation is written as
+unformatted plain text. The default value of the parameter is defined by the
+implementation. The set of available values is defined by the program being used
+to export documentation. However, it is suggested that the following might be
+provided:
+
+- `'markdown`
+- `'sxml`
+- `'jsdoc`
+
+```
+(documentation-format 'markdown) ; => 'text
+(documentation-format) ; => 'markdown
 ```
 <br/>
 
@@ -163,87 +179,90 @@ The following procedures may be automatically implemented using
 `define-record-type`:
 
 ```
-(make-doc attached? text content alist)
+(make-documentation attached? text content alist)
 ```
 
-Create a `doc` record. The `attached?` argument is a boolean indicating whether
-or not the documentation is attached to an expression. The `content` argument is
-the string containing the in-source documentation text, or `#f` if there is no
-documentation available. The `content` argument is the expression the in-source
-documentation is attached to, or `#f` if the in-source documentation is
-unattached. The `alist` argument is an association list containing
-implementation-defined information relating to the documentation, such as its
-location in the source file.
+Create a `documentation` record. The `attached?` argument is a boolean
+indicating whether or not the documentation is attached to an expression. The
+`content` argument is the string containing the in-source documentation text, or
+`#f` if there is no documentation available. The `content` argument is the
+expression the in-source documentation is attached to, or `#f` if the in-source
+documentation is unattached. The `alist` argument is an association list
+containing implementation-defined information relating to the documentation,
+such as its location in the source file.
 
 ```
-(make-doc #t "Three plus two." '(+ 3 2)
-          '((source-location . (22 42))))
-;; => object of type 'doc'
+(make-documentation #t "Three plus two." '(+ 3 2)
+                    '((source-location . (22 42))))
+;; => object of type 'documentation'
 ```
 <br/>
 
 ```
-(doc-attached? doc-object)
+(documentation-attached? documentation-object)
 ```
 
-Returns the `attached?` field of a `doc` record, a boolean.
+Returns the `attached?` field of a `documentation` record, a boolean.
 
 ```
-(doc-attached? (make-doc #t " Three plus two. " '(+ 3 2) '()))
+(documentation-attached?
+  (make-documentation #t " Three plus two. " '(+ 3 2) '()))
 ;; => #t
 ```
 <br/>
 
 ```
-(doc-text doc-object)
+(documentation-text documentation-object)
 ```
 
-Returns the `text` field of a `doc` record, a string.
+Returns the `text` field of a `documentation` record, a string.
 
 ```
-(doc-text (make-doc #t "Three plus two." '(+ 3 2) '()))
+(documentation-text (make-documentation #t "Three plus two." '(+ 3 2) '()))
 ;; => "Three plus two."
 ```
 <br/>
 
 ```
-(doc-content doc-object)
+(documentation-content documentation-object)
 ```
 
-Returns the `content` field of a `doc` record. The return value may be of any
-readable type. If the return value is a list, it may contain nested `doc`
-records.
+Returns the `content` field of a `documentation` record. The return value may be
+of any readable type. If the return value is a list, it may contain nested
+`documentation` records.
 
 ```
-(doc-content (make-doc #t " Three plus two. " '(+ 3 2) '()))
+(documentation-content
+  (make-documentation #t " Three plus two. " '(+ 3 2) '()))
 ;; => '(+ 3 2)
 ```
 <br/>
 
 ```
-(doc-alist doc-object)
+(documentation-alist documentation-object)
 ```
 
-Returns the `alist` field of a `doc` record, an association list.
+Returns the `alist` field of a `documentation` record, an association list.
 
 ```
-(doc-alist (make-doc #t " Three plus two. " '(+ 3 2)
-                     '((source-location . (22 42)))))
+(documentation-alist
+  (make-documentation #t " Three plus two. " '(+ 3 2)
+                      '((source-location . (22 42)))))
 ;; => '((source-location . (22 42)))
 ```
 <br/>
 
 ```
-(doc? object)
+(documentation? object)
 ```
 
 Type predicate that returns `#t` if the supplied `object`
-argument is a `doc` record. Otherwise, returns `#f`.
+argument is a `documentation` record. Otherwise, returns `#f`.
 
 ```
-(doc? (make-doc #t " Three plus two. " '(+ 3 2) '()))
+(documentation? (make-documentation #t " Three plus two. " '(+ 3 2) '()))
 ;; => #t
-(doc? "hello world")
+(documentation? "hello world")
 ;; => #f
 ```
 
@@ -252,9 +271,6 @@ argument is a `doc` record. Otherwise, returns `#f`.
 A conformant sample implementation of the documentation library is provided. It
 requires R7RS-small.
 
-Reader support for the syntax extensions is implementation-specific, and is not
-provided.
-
 The sample implementation is available [in the
 repo](https://github.com/scheme-requests-for-implementation/srfi-253) or
 [directly](https://srfi.schemers.org/srfi-253/doc-lib.sld).
@@ -262,6 +278,10 @@ repo](https://github.com/scheme-requests-for-implementation/srfi-253) or
 A test suite for the documentation library is available [in the
 repo](https://github.com/scheme-requests-for-implementation/srfi-253/blob/master/doc-lib-tests.scm)
 or [directly](https://srfi.schemers.org/srfi-253/doc-lib-tests.scm).
+
+A plain-text documentation exporter is available [in the
+repo](https://github.com/scheme-requests-for-implementation/srfi-253/blob/master/doc-exporter.scm)
+or [directly](https://srfi.schemers.org/srfi-253/doc-exporter.scm).
 
 ## Acknowledgements
 

@@ -1,4 +1,4 @@
-;; Scheme reader for in-source documentation.
+#|* Scheme reader for in-source documentation. *|#
 ;; SPDX-License-Identifier: MIT
 ;; SPDX-FileCopyrightText: 2024 Antero Mejr <mail@antr.me>
 
@@ -26,22 +26,54 @@
   (import (scheme base)
           (scheme char)
           (scheme read))
-  (export make-doc doc? doc-attached? doc-text doc-content doc-alist
-          read-doc)
+  (export make-documentation documentation? documentation-attached?
+          documentation-text documentation-content documentation-alist
+          read-documentation documentation-format)
   (begin
 
-    (define-record-type <doc>
-      (make-doc attached? text content alist)
-      doc?
-      (attached? doc-attached?)
-      (text doc-text) ;string
-      (content doc-content)
-      (alist doc-alist))
+    #|? This library implements the SRFI for in-source documentation. ?|#
 
-    (define (read-doc . rest)
+    #|* Create a `documentation` record.
+
+The `attached?` argument is a boolean indicating whether or not the
+documentation is attached to an expression. The `content` argument is the string
+containing the in-source documentation text, or `#f` if there is no
+documentation available. The `content` argument is the expression the in-source
+documentation is attached to, or `#f` if the in-source documentation is
+unattached. The `alist` argument is an association list containing
+implementation-defined information relating to the documentation, such as its
+location in the source file.
+    *|#
+    (define-record-type <documentation>
+      (make-documentation attached? text content alist)
+      documentation?
+      (attached? documentation-attached?)
+      (text documentation-text) ;string
+      (content documentation-content)
+      (alist documentation-alist))
+
+    #|* Read doc objects and Scheme objects from a port.
+
+This procedure returns the next `doc` record or object parsable from the
+given textual input port, updating `port` to point to the first character past
+the end of the unattached in-source documentation text, the
+documentation-attached Scheme object, or non-documented external representation
+of the object.
+    *|#
+    (define (read-documentation . rest)
       (if (null? rest)
           (read-doc-internal (current-input-port))
           (read-doc-internal (car rest))))
+
+    #|* Specify the markup language documentation comments are written in.
+
+The value of the parameter must be a symbol.
+    *|#
+    (define documentation-format
+      (make-parameter 'text (lambda (x)
+                              (unless (symbol? x)
+                                (error "Not a symbol: " x))
+                              x)))
 
     ;; Additions to the Chibi reader.
 
@@ -71,8 +103,8 @@
                (apply skip-doc-comment2 in (cons (read-char in) rest))))))
       skip-doc-comment2)
 
-    (define skip-doc-attached (skip-doc-comment #t #\?))
-    (define skip-doc-unattached (skip-doc-comment #f #\*))
+    (define skip-doc-attached (skip-doc-comment #t #\*))
+    (define skip-doc-unattached (skip-doc-comment #f #\?))
 
     ;; Taken from Chibi Scheme's lib/srfi/38.scm reader.
     ;; See "BEGIN EDITS" comment.
@@ -406,18 +438,6 @@
                    (if (or (eof-object? c2) (memv c2 delimiters))
                        c1
                        (read-named-char c1 in))))
-                ;; BEGIN EDITS
-                ((#\?)
-                 (read-char in)
-                 (let ((text (skip-doc-attached in))
-                       (one (read-one in)))
-                   (when (doc? one)
-                     (error "Consecutive attached documentation comments."))
-                   (make-doc #t text one '())))
-                ((#\*)
-                 (read-char in)
-                 (make-doc #f (skip-doc-unattached in) #f '()))
-                ;; END EDITS
                 (else
                  (error "unknown # syntax: " (peek-char in)))))
             (define (read-one in)

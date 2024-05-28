@@ -40,9 +40,9 @@ SPDX-License-Identifier: MIT
 <h2 id="abstract">Abstract</h2>
 
 
-  <p>This specifies reader syntax extensions for in-source documentation.
-The syntax <code>#? ... ?#</code> adds documentation text to the
-subsequent expression. The syntax <code>#* ... *#</code> adds
+  <p>This specifies a convention for in-source documentation within block
+comments. The syntax <code>#|* ... *|#</code> adds documentation text to
+the subsequent expression. The syntax <code>#|? ... ?|#</code> adds
 documentation text that is not attached to any particular expression. A
 Scheme library for reading in-source documentation is also
 specified.</p>
@@ -83,9 +83,8 @@ base for new editor tools and integrations.</p>
   <p>This SRFI intentionally does not specify a command-line interface for
 a program that exports in-source documentation. Such an interface would
 be better specified in a SRFI for package management. It also does not
-specify a format for the extracted in-source documentation text, as
-exporters may choose to support any number of different markup
-formats.</p>
+specify an interface to control the output of an exporter, as exporter
+behavior is outside the scope of this SRFI.</p>
 
   <p>In-source documentation is not to be confused with literate
 programming (LP). For in-source documentation systems, documentation is
@@ -122,45 +121,35 @@ format, and can be exported to HTML or LaTeX.</p>
 
   <h3 id="syntax">Syntax</h3>
 
-  <p>This SRFI extends the specifications of comments in <a href="https://small.r7rs.org/attachment/r7rs.pdf#section.2.2">R7RS
-section 2.2</a> as follows:</p>
+  <p>The sequences <code>#|*</code> and <code>#|?</code> indicate the
+start of a documentation comment. The documentation comment continues,
+and may span multiple lines, until a closing <code>*|#</code> or
+<code>?|#</code> appears, respectively.</p>
 
-  <p>The sequences <code>#?</code> and <code>#*</code> indicate the start
-of a documentation comment. The documentation comment continues, and may
-span multiple lines, until a matching <code>?#</code> or <code>*#</code>
-appears, respectively. If the matching closing character sequence is
-omitted, an error is signaled. Documentation comments are visible to
-Scheme as a single whitespace. Documentation comments may not be nested:
-a <code>#*</code> or <code>#?</code> sequence inside of a documentation
-comment is ignored.</p>
+  <p>When reading a source file in order to extract documentation, nested
+block comments within the documentation comment shall be ignored. When
+reading a source file in order to extract documentation, it is an error
+if the matching closing character sequence is omitted. If a nested
+documentation comment appears within a block comment, it shall be
+ignored for documentation purposes.</p>
 
-  <p>This SRFI also adds four productions in the specification of lexical
-structure, <a href="https://small.r7rs.org/attachment/r7rs.pdf#subsection.7.1.1">R7RS
-section 7.1.1</a>, as follows:</p>
-
-  <pre><code>&lt;attached documentation comment> -->
-  #? &lt;attached documentation comment text>* ?#
-
-&lt;attached documentation comment text> -->
-  &lt;character sequence not containing ?#>
-
-&lt;unattached documentation comment> -->
-  #* &lt;unattached documentation comment text>* *#
-
-&lt;unattached documentation comment text> -->
-  &lt;character sequence not containing *#></code></pre>
+  <p>This SRFI does not change the lexical syntax of block comments, as
+specified in <a href="https://small.r7rs.org/attachment/r7rs.pdf#section.2.2">R7RS
+section 2.2</a> and <a href="https://srfi.schemers.org/srfi-30/srfi-30.html">SRFI 30</a>. The
+reader’s behavior shall not change when a documentation comment sequence
+is encountered.</p>
 
   <h3 id="documentation-library">Documentation library</h3>
 
-  <pre><code>(read-doc [port])</code></pre>
+  <pre><code>(read-documentation [port])</code></pre>
 
-  <p>The <code>read-doc</code> procedure converts in-source documentation
-text and external representations of Scheme objects into
-<code>doc</code> records or objects. It returns the next
-<code>doc</code> record or object parsable from the given textual input
-port, updating <code>port</code> to point to the first character past
-the end of the unattached in-source documentation text, the
-documentation-attached Scheme object, or non-documented external
+  <p>The <code>read-documentation</code> procedure converts in-source
+documentation text and external representations of Scheme objects into
+<code>documentation</code> records or objects. It returns the next
+<code>documentation</code> record or object parsable from the given
+textual input port, updating <code>port</code> to point to the first
+character past the end of the unattached in-source documentation text,
+the documentation-attached Scheme object, or non-documented external
 representation of the object.</p>
 
   <p>When parsing in-source documentation text, this procedure must
@@ -169,117 +158,152 @@ convert them to <code>#</code> and <code>\</code>, respectively. No
 other escape sequences should be supported. This procedure shall not
 strip whitespace present in the documentation text.</p>
 
-  <p>It is an error if the attached <code>#? ... ?#</code> syntax is read,
-but there are no more objects to read before the expression ends or the
-port is exhausted. It is an error if the attached <code>#? ... ?#</code>
-syntax is read, but next read object is a documentation comment of any
+  <p>It is an error if an attached documentation comment is read, but
+there are no more objects to read before the expression ends or the port
+is exhausted. It is an error if an attached documentation comment is
+read, but the next object read is a documentation comment of either
 kind.</p>
 
-  <p>It is an error if the unattached <code>#* ... *#</code> syntax
-appears after the dot in a dotted list.</p>
+  <p>It is an error if an unattached documentation comment appears after
+the dot in a dotted list.</p>
 
   <p>If the <code>port</code> argument is not supplied,
 <code>(current-input-port)</code> shall be used.</p>
 
-  <pre><code>(define attached "#? The number 3. ?#3")
-(read-doc (open-input-string attached))
-;; => (doc #t " The number 3. " 3 '())
+  <pre><code>(define attached "#|* The number 3. *|#3")
+(read-documentation (open-input-string attached))
+;; => (make-documentation #t " The number 3. " 3 '())
 
-(define unattached "#* Hello world. */# *#")
-(read-doc (open-input-string unattached))
-;; => (doc #f " Hello world. *# " #f '())
+(define unattached "#|? Hello world. ?|\# ?|#")
+(read-documentation (open-input-string unattached))
+;; => (make-documentation #f " Hello world. ?|# " #f '())
 
-(define no-doc "(+ 3 2)")
-(read-doc (open-input-string no-doc))
+(define no-documentation "(+ 3 2)")
+(read-documentation (open-input-string no-documentation))
 ;; => '(+ 3 2)
 
-(define invalid "(+ 1 2 #? An expression is missing after this. ?# )")
-(read-doc (open-input-string invalid))
+(define invalid "(+ 1 2 #|* An expression is missing after this. *|# )")
+(read-documentation (open-input-string invalid))
 ;; => error
 
-(define nested "#? Outer #? (+ 1 #? Inner ?# (+ 2 #* Innermost *# 3))")
-(read-doc (open-input-string nested))
-;; => (doc #t " Outer "
-           `(+ 1 ,(doc #t " Inner "
-                       `(+ 2 ,(doc #f " Innermost " #f '()) 3)
-                       '()))
-           '())</code></pre>
+(define nested "#|* Outer #|* (+ 1 #|* Inner *|# (+ 2 #|? Innermost ?|# 3))")
+(read-documentation (open-input-string nested))
+;; => (make-documentation
+        #t " Outer "
+        `(+ 1 ,(make-documentation
+                 #t " Inner "
+                 `(+ 2 ,(make-documentation
+                          #f " Innermost "
+                          #f
+                          '())
+                     3)
+                 '()))
+        '())</code></pre>
+
+  <p><br></p>
+
+  <pre><code>(documentation-format [symbol])</code></pre>
+
+  <p>The <code>documentation-format</code> parameter specifies the markup
+language documentation comments are written in. The value of the
+parameter must be a symbol. The value <code>'text</code> shall be
+supported, to indicate that documentation is written as unformatted
+plain text. The default value of the parameter is defined by the
+implementation. The set of available values is defined by the program
+being used to export documentation. However, it is suggested that the
+following might be provided:</p>
+
+  <ul>
+
+    <li><code>'markdown</code></li>
+
+    <li><code>'sxml</code></li>
+
+    <li><code>'jsdoc</code></li>
+</ul>
+
+  <pre><code>(documentation-format 'markdown) ; => 'text
+(documentation-format) ; => 'markdown</code></pre>
 
   <p><br></p>
 
   <p>The following procedures may be automatically implemented using
 <code>define-record-type</code>:</p>
 
-  <pre><code>(make-doc attached? text content alist)</code></pre>
+  <pre><code>(make-documentation attached? text content alist)</code></pre>
 
-  <p>Create a <code>doc</code> record. The <code>attached?</code> argument
-is a boolean indicating whether or not the documentation is attached to
-an expression. The <code>content</code> argument is the string
-containing the in-source documentation text, or <code>#f</code> if there
-is no documentation available. The <code>content</code> argument is the
-expression the in-source documentation is attached to, or
-<code>#f</code> if the in-source documentation is unattached. The
-<code>alist</code> argument is an association list containing
-implementation-defined information relating to the documentation, such
-as its location in the source file.</p>
+  <p>Create a <code>documentation</code> record. The
+<code>attached?</code> argument is a boolean indicating whether or not
+the documentation is attached to an expression. The <code>content</code>
+argument is the string containing the in-source documentation text, or
+<code>#f</code> if there is no documentation available. The
+<code>content</code> argument is the expression the in-source
+documentation is attached to, or <code>#f</code> if the in-source
+documentation is unattached. The <code>alist</code> argument is an
+association list containing implementation-defined information relating
+to the documentation, such as its location in the source file.</p>
 
-  <pre><code>(make-doc #t "Three plus two." '(+ 3 2)
-          '((source-location . (22 42))))
-;; => object of type 'doc'</code></pre>
+  <pre><code>(make-documentation #t "Three plus two." '(+ 3 2)
+                    '((source-location . (22 42))))
+;; => object of type 'documentation'</code></pre>
 
   <p><br></p>
 
-  <pre><code>(doc-attached? doc-object)</code></pre>
+  <pre><code>(documentation-attached? documentation-object)</code></pre>
 
-  <p>Returns the <code>attached?</code> field of a <code>doc</code>
-record, a boolean.</p>
+  <p>Returns the <code>attached?</code> field of a
+<code>documentation</code> record, a boolean.</p>
 
-  <pre><code>(doc-attached? (make-doc #t " Three plus two. " '(+ 3 2) '()))
+  <pre><code>(documentation-attached?
+  (make-documentation #t " Three plus two. " '(+ 3 2) '()))
 ;; => #t</code></pre>
 
   <p><br></p>
 
-  <pre><code>(doc-text doc-object)</code></pre>
+  <pre><code>(documentation-text documentation-object)</code></pre>
 
-  <p>Returns the <code>text</code> field of a <code>doc</code> record, a
-string.</p>
+  <p>Returns the <code>text</code> field of a <code>documentation</code>
+record, a string.</p>
 
-  <pre><code>(doc-text (make-doc #t "Three plus two." '(+ 3 2) '()))
+  <pre><code>(documentation-text (make-documentation #t "Three plus two." '(+ 3 2) '()))
 ;; => "Three plus two."</code></pre>
 
   <p><br></p>
 
-  <pre><code>(doc-content doc-object)</code></pre>
+  <pre><code>(documentation-content documentation-object)</code></pre>
 
-  <p>Returns the <code>content</code> field of a <code>doc</code> record.
-The return value may be of any readable type. If the return value is a
-list, it may contain nested <code>doc</code> records.</p>
+  <p>Returns the <code>content</code> field of a
+<code>documentation</code> record. The return value may be of any
+readable type. If the return value is a list, it may contain nested
+<code>documentation</code> records.</p>
 
-  <pre><code>(doc-content (make-doc #t " Three plus two. " '(+ 3 2) '()))
+  <pre><code>(documentation-content
+  (make-documentation #t " Three plus two. " '(+ 3 2) '()))
 ;; => '(+ 3 2)</code></pre>
 
   <p><br></p>
 
-  <pre><code>(doc-alist doc-object)</code></pre>
+  <pre><code>(documentation-alist documentation-object)</code></pre>
 
-  <p>Returns the <code>alist</code> field of a <code>doc</code> record, an
-association list.</p>
+  <p>Returns the <code>alist</code> field of a <code>documentation</code>
+record, an association list.</p>
 
-  <pre><code>(doc-alist (make-doc #t " Three plus two. " '(+ 3 2)
-                     '((source-location . (22 42)))))
+  <pre><code>(documentation-alist
+  (make-documentation #t " Three plus two. " '(+ 3 2)
+                      '((source-location . (22 42)))))
 ;; => '((source-location . (22 42)))</code></pre>
 
   <p><br></p>
 
-  <pre><code>(doc? object)</code></pre>
+  <pre><code>(documentation? object)</code></pre>
 
   <p>Type predicate that returns <code>#t</code> if the supplied
-<code>object</code> argument is a <code>doc</code> record. Otherwise,
-returns <code>#f</code>.</p>
+<code>object</code> argument is a <code>documentation</code> record.
+Otherwise, returns <code>#f</code>.</p>
 
-  <pre><code>(doc? (make-doc #t " Three plus two. " '(+ 3 2) '()))
+  <pre><code>(documentation? (make-documentation #t " Three plus two. " '(+ 3 2) '()))
 ;; => #t
-(doc? "hello world")
+(documentation? "hello world")
 ;; => #f</code></pre>
 
   <h2 id="implementation">Implementation</h2>
@@ -287,14 +311,14 @@ returns <code>#f</code>.</p>
   <p>A conformant sample implementation of the documentation library is
 provided. It requires R7RS-small.</p>
 
-  <p>Reader support for the syntax extensions is implementation-specific,
-and is not provided.</p>
-
   <p>The sample implementation is available <a href="https://github.com/scheme-requests-for-implementation/srfi-253">in
 the repo</a> or <a href="https://srfi.schemers.org/srfi-253/doc-lib.sld">directly</a>.</p>
 
   <p>A test suite for the documentation library is available <a href="https://github.com/scheme-requests-for-implementation/srfi-253/blob/master/doc-lib-tests.scm">in
 the repo</a> or <a href="https://srfi.schemers.org/srfi-253/doc-lib-tests.scm">directly</a>.</p>
+
+  <p>A plain-text documentation exporter is available <a href="https://github.com/scheme-requests-for-implementation/srfi-253/blob/master/doc-exporter.scm">in
+the repo</a> or <a href="https://srfi.schemers.org/srfi-253/doc-exporter.scm">directly</a>.</p>
 
   <h2 id="acknowledgements">Acknowledgements</h2>
 

@@ -7,6 +7,7 @@
         (scheme process-context)
         (scheme write)
         (srfi 1)
+        (srfi 13)
         (srfi 28)
         (doc-lib))
 
@@ -32,9 +33,9 @@
             (format "* Identifier ~a\n" head)))))
 
 (define (identifier-name doc)
-  (if (not (doc-attached? doc))
+  (if (not (documentation-attached? doc))
       ""
-      (let ((expr (doc-content doc)))
+      (let ((expr (documentation-content doc)))
         (cond ((list? expr)
                (list-identifier expr))
               ((pair? expr)
@@ -45,7 +46,8 @@
 (define (format-doc-output docs)
   (string-join (map (lambda (doc)
                       (string-append (identifier-name doc)
-                                     (doc-text doc))))
+                                     (string-trim-both
+                                      (documentation-text doc)))))
                "\n"))
 
 ;; Fancier exporters will want to infer document structure from the records,
@@ -53,7 +55,9 @@
 (define (flatten lst)
   (cond ((null? x) '())
         ((pair? x) (append (flatten (car x)) (flatten (cdr x))))
-        ((doc? x) (append (list x) (flatten (doc-content x))))
+        ((documentation? x) (if (documentation-attached? x)
+                                (cons x (flatten (documentation-content x)))
+                                (list x)))
         (else (list x))))
 
 (define (read-all-docs port)
@@ -61,8 +65,8 @@
              (last #f))
     (when (eof-object? last)
       (flatten docs))
-    (let ((obj (read-doc port)))
-      (if (doc? obj)
+    (let ((obj (read-documentation port)))
+      (if (documentation? obj)
           (loop (cons obj docs) obj)
           (loop docs obj)))))
 
@@ -75,11 +79,12 @@
     (error "Unrecognized documentation format: " (documentation-format)))
   (let ((docs (call-with-input-file fpath
                 (lambda (port)
-                  (read-all-docs port)))))
-    (for-each (lambda (fpath)
-                (call-with-output-file (string-append fpath ".txt")
-                  (lambda (port)
-                    (display (format-doc-output docs))))))))
+                  (read-all-docs port))))
+        (outpath (string-append fpath ".txt")))
+    (display (format "Writing ~a.\n" outpath) (current-error-port))
+    (call-with-output-file outpath
+      (lambda (port)
+        (display (format-doc-output docs))))))
 
 (define (main args)
   (when (null? args)
