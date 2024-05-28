@@ -1,7 +1,7 @@
 ## Abstract
 
 This specifies a convention for in-source documentation within block comments.
-The syntax `#|* ... *|#` adds documentation text to the subsequent expression.
+The syntax `#|* ... *|#` adds documentation text to the adjacent expression.
 The syntax `#|? ... ?|#` adds documentation text that is not attached to any
 particular expression. A Scheme library for reading in-source documentation is
 also specified.
