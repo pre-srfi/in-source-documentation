@@ -80,16 +80,18 @@ The sequences `#|*` and `#|?` indicate the start of a documentation comment. The
 documentation comment continues, and may span multiple lines, until a closing
 `*|#` or `?|#` appears, respectively.
 
-When reading a source file in order to extract documentation, an exception shall
-be raised if the matching closing character sequence is omitted. If a nested
-documentation comment appears within a block comment, it shall be ignored for
-documentation purposes. If a nested block comment appears within a documentation
-comment, it shall be ignored for documentation purposes.
-
 This SRFI does not change the lexical syntax of block comments, as specified in
 [R7RS section 2.2](https://small.r7rs.org/attachment/r7rs.pdf#section.2.2) and
 [SRFI 30](https://srfi.schemers.org/srfi-30/srfi-30.html). The reader's behavior
 shall not change when a documentation comment sequence is encountered.
+
+The following rules apply when reading documentation comments. An exception
+shall be raised if the matching closing character sequence is omitted. If a
+nested documentation comment appears within a block comment, it shall be
+ignored. If a nested block comment appears within a documentation comment, the
+character sequence shall be read literally as part of the documentation text. If
+a documentation comment appears within a line or s-expression comment, it shall
+be ignored.
 
 ### Documentation library
 
