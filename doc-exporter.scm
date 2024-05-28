@@ -52,10 +52,10 @@
                       (string-append (identifier-name doc) "\n"
                                      (string-trim-both
                                       (documentation-text doc))
-                                     "\n\n"))
+                                     "\n"))
                     docs)
                "\
-********************************************************************************\n"))
+\n********************************************************************************\n"))
 
 ;; Fancier exporters will want to infer document structure from the records,
 ;; instead of just flattening them.
