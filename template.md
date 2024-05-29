@@ -196,6 +196,8 @@ provided:
 
 The following procedures may be automatically implemented using
 `define-record-type`:
+<br/>
+<br/>
 
 ```
 (make-documentation attached? text content alist)
