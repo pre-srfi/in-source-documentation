@@ -134,7 +134,7 @@ If the `port` argument is not supplied, `(current-input-port)` shall be used.
 (read-documentation (open-input-string unattached))
 => [documentation record]
      attached = #f
-     text = " Hello world. "
+     text = " Hello world. ?|# "
      content = #f
      alist = ()
 
