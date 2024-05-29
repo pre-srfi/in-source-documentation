@@ -132,13 +132,13 @@ section 2.2</a> and <a href="https://srfi.schemers.org/srfi-30/srfi-30.html">SRF
 reader’s behavior shall not change when a documentation comment sequence
 is encountered.</p>
 
-  <p>The following rules apply when reading documentation comments. An
+  <p>The following rules apply when reading documentation comments: - An
 exception shall be raised if the matching closing character sequence is
-omitted. If a nested documentation comment appears within a block
-comment, it shall be ignored. If a nested block comment appears within a
-documentation comment, the character sequence shall be read literally as
-part of the documentation text. If a documentation comment appears
-within a line or s-expression comment, it shall be ignored.</p>
+omitted. - If a nested documentation comment appears within a block
+comment, it shall be ignored. - If a nested block comment appears within
+a documentation comment, the character sequence shall be read literally
+as part of the documentation text. - If a documentation comment appears
+within a line or S-expression comment, it shall be ignored.</p>
 
   <h3 id="documentation-library">Documentation library</h3>
 

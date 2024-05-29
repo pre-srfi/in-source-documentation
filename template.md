@@ -85,13 +85,15 @@ This SRFI does not change the lexical syntax of block comments, as specified in
 [SRFI 30](https://srfi.schemers.org/srfi-30/srfi-30.html). The reader's behavior
 shall not change when a documentation comment sequence is encountered.
 
-The following rules apply when reading documentation comments. An exception
-shall be raised if the matching closing character sequence is omitted. If a
-nested documentation comment appears within a block comment, it shall be
-ignored. If a nested block comment appears within a documentation comment, the
-character sequence shall be read literally as part of the documentation text. If
-a documentation comment appears within a line or s-expression comment, it shall
-be ignored.
+The following rules apply when reading documentation comments:
+- An exception shall be raised if the matching closing character sequence is
+  omitted.
+- If a nested documentation comment appears within a block comment, it shall be
+ignored.
+- If a nested block comment appears within a documentation comment, the
+character sequence shall be read literally as part of the documentation text.
+- If a documentation comment appears within a line or S-expression comment, it
+shall be ignored.
 
 ### Documentation library
 
