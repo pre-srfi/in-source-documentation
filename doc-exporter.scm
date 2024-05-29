@@ -29,6 +29,8 @@
                               "Variadic")))
                (format "* Variable ~a\n"
                        (cadr expr))))
+          ((eq? head 'define-syntax)
+           (format "* Syntax ~a\n" (cadr expr)))
           ((eq? head 'define-record-type)
            (format "* Record ~a\nConstructor: ~a\nPredicate: ~a\n"
                    (cadr expr)
@@ -46,9 +48,9 @@
         (cond ((list? expr)
                (list-identifier expr))
               ((pair? expr)
-               (format "* ~a\n\n" (car pair)))
+               (format "* ~a\n" (car pair)))
               (else
-               (format "* ~a\n\n" expr))))))
+               (format "* ~a\n" expr))))))
 
 (define (format-doc-output docs)
   (string-join (map (lambda (doc)
