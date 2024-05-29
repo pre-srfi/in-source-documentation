@@ -270,7 +270,11 @@ to the documentation, such as its location in the source file.</p>
 
   <pre><code>(make-documentation #t "Three plus two." '(+ 3 2)
                     '((source-location . (22 42))))
-=> object of type 'documentation'</code></pre>
+=> [documentation record]
+     attached = #t
+     text = "Three plus two."
+     content = (+ 3 2)
+     alist = ((source-location . (22 42)))</code></pre>
 
   <p><br></p>
 

@@ -212,7 +212,11 @@ documentation, such as its location in the source file.
 ```
 (make-documentation #t "Three plus two." '(+ 3 2)
                     '((source-location . (22 42))))
-=> object of type 'documentation'
+=> [documentation record]
+     attached = #t
+     text = "Three plus two."
+     content = (+ 3 2)
+     alist = ((source-location . (22 42)))
 ```
 <br/>
 
