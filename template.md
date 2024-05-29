@@ -188,7 +188,7 @@ The following procedures may be automatically implemented using
 
 Create a `documentation` record. The `attached?` argument is a boolean
 indicating whether or not the documentation is attached to an expression. The
-`content` argument is the string containing the in-source documentation text, or
+`text` argument is the string containing the in-source documentation text, or
 `#f` if there is no documentation available. The `content` argument is the
 expression the in-source documentation is attached to, or `#f` if the in-source
 documentation is unattached. The `alist` argument is an association list
