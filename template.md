@@ -266,7 +266,7 @@ Returns the `alist` field of a `documentation` record, an association list.
 (documentation-alist
   (make-documentation #t " Three plus two. " '(+ 3 2)
                       '((source-location . (22 42)))))
-=> '((source-location . (22 42)))
+=> ((source-location . (22 42)))
 ```
 <br/>
 
