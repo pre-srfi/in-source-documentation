@@ -135,4 +135,9 @@
   (let ((out (read-documentation (open-input-string in-block-comment))))
     (test-assert (eof-object? out))))
 
+(define single-char "#| * ? |#")
+(test-group "read-documentation/single-char"
+  (let ((out (read-documentation (open-input-string single-char))))
+    (test-assert (eof-object? out))))
+
 (test-end)
