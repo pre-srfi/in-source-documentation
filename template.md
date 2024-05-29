@@ -14,17 +14,13 @@ the source code file, extract the documentation, and use it to generate
 typeset documentation in a format such as LaTeX or HTML.
 
 One of the advantages of in-source documentation is that when reading code,
-there is no need to simulatenously navigate and switch between a separate
-external information source, like an Info page or website. And oftentimes,
-reading an object's in-source documentation will make reading its code
-unnecessary.
+there is no need to simulatenously reference an external information source,
+like an Info page or website. Comprehensive in-source documentation can, in some
+case, eliminate the need to read source code entirely. Given the improved
+locality of in-source documentation, it is also easier for the programmer to
+keep documentation up to date.
 
-Keeping documentation up-to-date is another task made easier by in-source
-documentation. It is quicker to update documentation that is located next to the
-modified source code, than having to find and update the correct location
-in an external documentation file.
-
-New technologies like the [Language Server
+Technologies like the [Language Server
 Protocol](https://microsoft.github.io/language-server-protocol) (LSP) allow
 in-source documentation to be automatically retrieved and displayed by text
 editors and Integrated Development Environments (IDE). LSP clients are included
