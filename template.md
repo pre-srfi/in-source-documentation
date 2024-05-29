@@ -86,6 +86,7 @@ This SRFI does not change the lexical syntax of block comments, as specified in
 shall not change when a documentation comment sequence is encountered.
 
 The following rules apply when reading documentation comments:
+
 - An exception shall be raised if the matching closing character sequence is
   omitted.
 - If a nested documentation comment appears within a block comment, it shall be
