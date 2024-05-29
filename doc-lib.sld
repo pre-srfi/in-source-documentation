@@ -143,23 +143,30 @@ The value of the parameter must be a symbol.
          (skip-line in)
          (skip-whitespace-and-line-comments in))))
 
-    ;; BEGIN EDITS - added read argument
-    (define (skip-comment in depth read)
+    ;; BEGIN EDITS - added read and block-sequence? argument
+    (define (skip-comment in depth read block-sequence?)
       (case (read-char in)
-        ((#\#) (skip-comment in (if (eqv? #\| (read-char in)) (+ depth 1) depth)
-                             read))
+        ((#\#) (skip-comment in (if (eqv? #\| (peek-char in))
+                                    (+ depth 1)
+                                    depth)
+                             read
+                             (eqv? #\| (peek-char in))))
         ((#\|) (if (eqv? #\# (peek-char in))
                    (if (zero? depth)
-                       #f
-                       (skip-comment in (- depth 1) read))
-                   (skip-comment in depth read)))
-        ((#\*) (let ((text (skip-doc-attached in)))
-                 (make-documentation #t text (read in) '())))
-        ((#\?) (let ((text (skip-doc-unattached in)))
-                 (make-documentation #f text #f '())))
+                       (begin (read-char in) (read in))
+                       (skip-comment in (- depth 1) read #f))
+                   (skip-comment in depth read block-sequence?)))
+        ((#\*) (if (and block-sequence? (zero? depth))
+                   (let ((text (skip-doc-attached in)))
+                     (make-documentation #t text (read in) '()))
+                   (skip-comment in depth read #f)))
+        ((#\?) (if (and block-sequence? (zero? depth))
+                   (let ((text (skip-doc-unattached in)))
+                     (make-documentation #f text #f '()))
+                   (skip-comment in depth read #f)))
         (else (if (eof-object? (peek-char in))
                   (read-incomplete-error "unterminated #| comment")
-                  (skip-comment in depth read)))))
+                  (skip-comment in depth read #f)))))
     ;; END EDITS
 
     ;; returns #f if a trailing # was consumed
@@ -385,7 +392,7 @@ The value of the parameter must be a symbol.
                  ;; BEGIN EDITS
                  ;; (skip-comment in 0)
                  ;; (read-one in))
-                 (skip-comment in 0 read-one))
+                 (skip-comment in 0 read-one #t))
                  ;; END EDITS
                 ((#\!)
                  (read-char in)

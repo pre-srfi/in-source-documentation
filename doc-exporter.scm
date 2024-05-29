@@ -57,8 +57,8 @@
                                       (documentation-text doc))
                                      "\n"))
                     docs)
-               "\
-\n********************************************************************************\n"))
+               "
+********************************************************************************\n"))
 
 ;; Fancier exporters will want to infer document structure from the records,
 ;; instead of just flattening them.
