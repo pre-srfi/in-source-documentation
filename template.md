@@ -85,7 +85,7 @@ This SRFI does not change the lexical syntax of block comments, as specified in
 [SRFI 30](https://srfi.schemers.org/srfi-30/srfi-30.html). The reader's behavior
 shall not change when a documentation comment sequence is encountered.
 
-The following rules apply when reading documentation comments:
+The following rules apply only when reading documentation comments:
 
 - An exception shall be raised if the matching closing character sequence is
   omitted.
