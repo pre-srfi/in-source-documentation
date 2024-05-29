@@ -62,7 +62,7 @@
 
 (define empty "#|**|#3")
 (define empty2 "#|??|#3")
-(test-group "read-documentation/none"
+(test-group "read-documentation/empty"
   (let ((obj (read-documentation (open-input-string empty)))
         (obj2 (read-documentation (open-input-string empty2))))
     (test-assert (documentation-attached? obj))
@@ -119,5 +119,20 @@
     (test-assert (list? (documentation-alist (second out)))))
   (test-error (read-documentation (open-input-string weird2)))
   (test-error (read-documentation (open-input-string weird3))))
+
+(define in-line-comment ";; #|? Hello ?|#\n")
+(test-group "read-documentation/in-line-comment"
+  (let ((out (read-documentation (open-input-string in-line-comment))))
+    (test-assert (eof-object? out))))
+
+(define in-sexp-comment "#;(+ 1 #|? Hello ?|# 2)")
+(test-group "read-documentation/in-sexp-comment"
+  (let ((out (read-documentation (open-input-string in-sexp-comment))))
+    (test-assert (eof-object? out))))
+
+(define in-block-comment "#| hello #|? world ?|# ! |#")
+(test-group "read-documentation/in-block-comment"
+  (let ((out (read-documentation (open-input-string in-block-comment))))
+    (test-assert (eof-object? out))))
 
 (test-end)
