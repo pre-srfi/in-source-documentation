@@ -128,33 +128,47 @@ If the `port` argument is not supplied, `(current-input-port)` shall be used.
 ```
 (define attached "#|* The number 3. *|#3")
 (read-documentation (open-input-string attached))
-;; => (make-documentation #t " The number 3. " 3 '())
+=> [documentation record]
+     attached = #t
+     text = " The number 3. "
+     content = 3
+     alist = ()
 
 (define unattached "#|? Hello world. ?|\# ?|#")
 (read-documentation (open-input-string unattached))
-;; => (make-documentation #f " Hello world. ?|# " #f '())
+=> [documentation record]
+     attached = #f
+     text = " Hello world. "
+     content = #f
+     alist = ()
 
 (define no-documentation "(+ 3 2)")
 (read-documentation (open-input-string no-documentation))
-;; => '(+ 3 2)
+=> (+ 3 2)
 
 (define invalid "(+ 1 2 #|* An expression is missing after this. *|# )")
 (read-documentation (open-input-string invalid))
-;; => error
+=> error
 
-(define nested "#|* Outer #|* (+ 1 #|* Inner *|# (+ 2 #|? Innermost ?|# 3))")
+(define nested "#|* Outer #|*
+                (+ 1 #|* Inner *|#
+                     (+ 2 #|? Innermost ?|# 3))")
 (read-documentation (open-input-string nested))
-;; => (make-documentation
-        #t " Outer "
-        `(+ 1 ,(make-documentation
-                 #t " Inner "
-                 `(+ 2 ,(make-documentation
-                          #f " Innermost "
-                          #f
-                          '())
-                     3)
-                 '()))
-        '())
+=> [documentation record]
+     attached = #t
+     text = " Outer "
+     content = (+ 1 [documentation record]
+                      attached = #t
+                      text = " Inner "
+                      content = (+ 2 [documentation record]
+                                       attached = #f
+                                       content = " Innermost "
+                                       content = #f
+                                       alist = ()
+                                   3)
+                      alist = ()
+               )
+     alist = ()
 ```
 <br/>
 
@@ -198,7 +212,7 @@ documentation, such as its location in the source file.
 ```
 (make-documentation #t "Three plus two." '(+ 3 2)
                     '((source-location . (22 42))))
-;; => object of type 'documentation'
+=> object of type 'documentation'
 ```
 <br/>
 
@@ -211,7 +225,7 @@ Returns the `attached?` field of a `documentation` record, a boolean.
 ```
 (documentation-attached?
   (make-documentation #t " Three plus two. " '(+ 3 2) '()))
-;; => #t
+=> #t
 ```
 <br/>
 
@@ -223,7 +237,7 @@ Returns the `text` field of a `documentation` record, a string.
 
 ```
 (documentation-text (make-documentation #t "Three plus two." '(+ 3 2) '()))
-;; => "Three plus two."
+=> "Three plus two."
 ```
 <br/>
 
@@ -238,7 +252,7 @@ of any readable type. If the return value is a list, it may contain nested
 ```
 (documentation-content
   (make-documentation #t " Three plus two. " '(+ 3 2) '()))
-;; => '(+ 3 2)
+=> (+ 3 2)
 ```
 <br/>
 
@@ -252,7 +266,7 @@ Returns the `alist` field of a `documentation` record, an association list.
 (documentation-alist
   (make-documentation #t " Three plus two. " '(+ 3 2)
                       '((source-location . (22 42)))))
-;; => '((source-location . (22 42)))
+=> '((source-location . (22 42)))
 ```
 <br/>
 
@@ -265,9 +279,9 @@ argument is a `documentation` record. Otherwise, returns `#f`.
 
 ```
 (documentation? (make-documentation #t " Three plus two. " '(+ 3 2) '()))
-;; => #t
+=> #t
 (documentation? "hello world")
-;; => #f
+=> #f
 ```
 
 ## Implementation

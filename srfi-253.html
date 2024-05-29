@@ -183,33 +183,47 @@ the dot in a dotted list.</p>
 
   <pre><code>(define attached "#|* The number 3. *|#3")
 (read-documentation (open-input-string attached))
-;; => (make-documentation #t " The number 3. " 3 '())
+=> [documentation record]
+     attached = #t
+     text = " The number 3. "
+     content = 3
+     alist = ()
 
 (define unattached "#|? Hello world. ?|\# ?|#")
 (read-documentation (open-input-string unattached))
-;; => (make-documentation #f " Hello world. ?|# " #f '())
+=> [documentation record]
+     attached = #f
+     text = " Hello world. "
+     content = #f
+     alist = ()
 
 (define no-documentation "(+ 3 2)")
 (read-documentation (open-input-string no-documentation))
-;; => '(+ 3 2)
+=> (+ 3 2)
 
 (define invalid "(+ 1 2 #|* An expression is missing after this. *|# )")
 (read-documentation (open-input-string invalid))
-;; => error
+=> error
 
-(define nested "#|* Outer #|* (+ 1 #|* Inner *|# (+ 2 #|? Innermost ?|# 3))")
+(define nested "#|* Outer #|*
+                (+ 1 #|* Inner *|#
+                     (+ 2 #|? Innermost ?|# 3))")
 (read-documentation (open-input-string nested))
-;; => (make-documentation
-        #t " Outer "
-        `(+ 1 ,(make-documentation
-                 #t " Inner "
-                 `(+ 2 ,(make-documentation
-                          #f " Innermost "
-                          #f
-                          '())
-                     3)
-                 '()))
-        '())</code></pre>
+=> [documentation record]
+     attached = #t
+     text = " Outer "
+     content = (+ 1 [documentation record]
+                      attached = #t
+                      text = " Inner "
+                      content = (+ 2 [documentation record]
+                                       attached = #f
+                                       content = " Innermost "
+                                       content = #f
+                                       alist = ()
+                                   3)
+                      alist = ()
+               )
+     alist = ()</code></pre>
 
   <p><br></p>
 
@@ -255,7 +269,7 @@ to the documentation, such as its location in the source file.</p>
 
   <pre><code>(make-documentation #t "Three plus two." '(+ 3 2)
                     '((source-location . (22 42))))
-;; => object of type 'documentation'</code></pre>
+=> object of type 'documentation'</code></pre>
 
   <p><br></p>
 
@@ -266,7 +280,7 @@ to the documentation, such as its location in the source file.</p>
 
   <pre><code>(documentation-attached?
   (make-documentation #t " Three plus two. " '(+ 3 2) '()))
-;; => #t</code></pre>
+=> #t</code></pre>
 
   <p><br></p>
 
@@ -276,7 +290,7 @@ to the documentation, such as its location in the source file.</p>
 record, a string.</p>
 
   <pre><code>(documentation-text (make-documentation #t "Three plus two." '(+ 3 2) '()))
-;; => "Three plus two."</code></pre>
+=> "Three plus two."</code></pre>
 
   <p><br></p>
 
@@ -289,7 +303,7 @@ readable type. If the return value is a list, it may contain nested
 
   <pre><code>(documentation-content
   (make-documentation #t " Three plus two. " '(+ 3 2) '()))
-;; => '(+ 3 2)</code></pre>
+=> (+ 3 2)</code></pre>
 
   <p><br></p>
 
@@ -301,7 +315,7 @@ record, an association list.</p>
   <pre><code>(documentation-alist
   (make-documentation #t " Three plus two. " '(+ 3 2)
                       '((source-location . (22 42)))))
-;; => '((source-location . (22 42)))</code></pre>
+=> '((source-location . (22 42)))</code></pre>
 
   <p><br></p>
 
@@ -312,9 +326,9 @@ record, an association list.</p>
 Otherwise, returns <code>#f</code>.</p>
 
   <pre><code>(documentation? (make-documentation #t " Three plus two. " '(+ 3 2) '()))
-;; => #t
+=> #t
 (documentation? "hello world")
-;; => #f</code></pre>
+=> #f</code></pre>
 
   <h2 id="implementation">Implementation</h2>
 
